@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: itexMoney
-Version: 0.08 (12-12-2008)
+Version: 0.09 (13-12-2008)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, tnx.net/xap.ru, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, and html inserts helper.
 Author: Itex
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.08';
+	var $version = '0.09';
 	var $error = '';
 	//var $force_show_code = true;
 	var $sape;
@@ -458,12 +458,9 @@ google_ad_client = "'.get_option('itex_m_adsense_id').'"; google_ad_slot = "'.ge
 		{
 			if (get_option('itex_m_begun_b'.$block.'_enable'))
 			{
-				$script = '<script type="text/javascript">
-var begun_auto_pad = '.get_option('itex_m_begun_id').';
-var begun_block_id = '.get_option('itex_m_begun_b'.$block.'_block_id').';
-</script>
-<script src="http://autocontext.begun.ru/autocontext2.js" type="text/javascript"></script>
-';
+				$script = '<p><script type="text/javascript"><!--
+var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.get_option('itex_m_begun_b'.$block.'_block_id').';
+//--></script><script type="text/javascript" src="http://autocontext.begun.ru/autocontext2.js"></script></p>';
 				$pos = get_option('itex_m_begun_b'.$block.'_pos');
 				switch ($pos)
 				{
