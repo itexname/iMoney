@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: itexMoney
-Version: 0.10 (14-12-2008)
+Version: 0.09 (13-12-2008)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, tnx.net/xap.ru, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, and html inserts helper.
 Author: Itex
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.10';
+	var $version = '0.09';
 	var $error = '';
 	//var $force_show_code = true;
 	var $sape;
@@ -164,7 +164,7 @@ class itex_money
 			$domain = 'iMoney';
 			if (isset($l10n[$domain])) return;
 			///ru_RU lang .mo file
-			$input = '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';
+			$input = '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';
 			$input = gzuncompress(base64_decode($input));
 			$inputReader = new StringReader($input);
 			$l10n[$domain] = new gettext_reader($inputReader);
@@ -577,7 +577,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 //		}
 //		echo '
 //  			<p>
-//    			<label for="itex_m_widget">'.__('Widget Title: ', 'iMoney').'</label>
+//    			<label for="itex_m_widget">'._e('Widget Title: ', 'iMoney').'</label>
 //    			<textarea name="itex_m_widget_title" id="itex_m_widget" rows="1" cols="20">'.$title.'</textarea>
 //    			<input type="hidden" id="" name="itex_m_widget_Submit" value="1" />
 //  			</p>';
@@ -670,10 +670,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		
 			</div>
 			<p class="submit">
-				<input type='submit' name='info_update' value='<?php echo __('Save Changes', 'iMoney'); ?>' />
+				<input type='submit' name='info_update' value='<?php echo _e('Save Changes', 'iMoney'); ?>' />
 			</p>
 			<p align="center">
-				<?php echo __("Powered by ",'iMoney')."<a href='http://itex.name' title='iTex iMoney'>iTex iMoney</a> ".__("Version:",'iMoney').$this->version; ?>
+				<?php echo _e("Powered by <a href='http://itex.name' title='iTex iMoney'>iTex iMoney</a> Version:",'iMoney'); echo $this->version; ?>
 			</p>				
 			</form>
 		
@@ -863,11 +863,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_sape_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -879,7 +879,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_links_beforecontent')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo _e(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_sape_links_beforecontent') == 1) echo " selected='selected'";
@@ -913,7 +913,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_links_aftercontent')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_sape_links_aftercontent') == 1) echo " selected='selected'";
@@ -945,7 +945,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_links_sidebar')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_sape_links_sidebar') == 1) echo " selected='selected'";
@@ -981,7 +981,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<select name='sape_links_footer' id='sape_links_footer'>\n";
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_links_footer')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo _e(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_sape_links_footer') == 1) echo " selected='selected'";
@@ -1016,7 +1016,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<select name='sape_widget' id='sape_widget'>\n";
 						echo "<option value='0'";
 						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo _e(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
@@ -1037,18 +1037,18 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td>
 						<?php
-						echo "<select name='sape_sapecontext_enable' id='sape_enable'>\n";
+						echo "<select name='sapecontext_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
 
 						if(get_option('itex_m_sape_sapecontext_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_sapecontext_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
-						echo '<label for="">'.__('Context', 'iMoney').'</label>';
+						echo '<label for="">'._e('Context', 'iMoney').'</label>';
 
 						echo "<br/>\n";
 
@@ -1056,11 +1056,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_sape_sapecontext_pages_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_sapecontext_pages_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__('Show context only on Pages and Posts.', 'iMoney').'</label>';
@@ -1072,7 +1072,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
-						<label for=""><?php echo __('Check:', 'iMoney'); ?></label>
+						<label for=""><?php echo _e('Check:', 'iMoney'); ?></label>
 					</th>
 					<td>
 						<?php
@@ -1080,11 +1080,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_sape_check')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_sape_check')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 
@@ -1217,11 +1217,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_adsense_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_adsense_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1244,11 +1244,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_adsense_b'.$block.'_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_adsense_b'.$block.'_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1258,7 +1258,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<select name='adsense_b".$block."_size' id='adsense_b".$block."_size'>\n";
 						echo "<option value='0'";
 						if(!get_option('itex_m_adsense_b'.$block.'_size')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 
 						$size = array('728x90', '468x60', '234x60','120x600', '160x600', '120x240', '336x280', '300x250', '250x250', '200x200', '180x150', '125x125');
 
@@ -1275,7 +1275,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<select name='adsense_b".$block."_pos' id='adsense_b".$block."_pos'>\n";
 						echo "<option value='0'";
 						if(!get_option('itex_m_adsense_b'.$block.'_pos')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 
 						$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
 						foreach ( $pos as $k)
@@ -1383,11 +1383,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_begun_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_begun_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1410,11 +1410,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_begun_b'.$block.'_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_begun_b'.$block.'_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1423,7 +1423,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<select name='begun_b".$block."_pos' id='begun_b".$block."_pos'>\n";
 						echo "<option value='0'";
 						if(!get_option('itex_m_begun_b'.$block.'_pos')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 
 						$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
 						foreach ( $pos as $k)
@@ -1538,11 +1538,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_html_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_html_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1569,11 +1569,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_html_footer_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_html_footer_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1600,11 +1600,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_html_beforecontent_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_html_beforecontent_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1631,11 +1631,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_html_aftercontent_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_html_aftercontent_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1662,11 +1662,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_html_sidebar_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_html_sidebar_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1800,11 +1800,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_tnx_enable')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_tnx_enable')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
@@ -1816,7 +1816,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_tnx_links_beforecontent')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo _e(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_tnx_links_beforecontent') == 1) echo " selected='selected'";
@@ -1850,7 +1850,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_tnx_links_aftercontent')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_tnx_links_aftercontent') == 1) echo " selected='selected'";
@@ -1882,7 +1882,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_tnx_links_sidebar')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_tnx_links_sidebar') == 1) echo " selected='selected'";
@@ -1918,7 +1918,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<select name='tnx_links_footer' id='tnx_links_footer'>\n";
 						echo "<option value='0'";
 						if(!get_option('itex_m_tnx_links_footer')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo _e(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if(get_option('itex_m_tnx_links_footer') == 1) echo " selected='selected'";
@@ -1953,7 +1953,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<select name='tnx_widget' id='tnx_widget'>\n";
 						echo "<option value='0'";
 						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo _e(">Disabled</option>\n", 'iMoney');
 
 						echo "<option value='1'";
 						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
@@ -1972,7 +1972,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
-						<label for=""><?php echo __('Check:', 'iMoney'); ?></label>
+						<label for=""><?php echo _e('Check:', 'iMoney'); ?></label>
 					</th>
 					<td>
 						<?php
@@ -1980,11 +1980,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<option value='1'";
 
 						if(get_option('itex_m_tnx_check')) echo " selected='selected'";
-						echo ">".__("Enabled", 'iMoney')."</option>\n";
+						echo __(">Enabled</option>\n", 'iMoney');
 
 						echo "<option value='0'";
 						if(!get_option('itex_m_tnx_check')) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo __(">Disabled</option>\n", 'iMoney');
 						echo "</select>\n";
 
 
