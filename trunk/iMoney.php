@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: itexMoney
-Version: 0.10 (14-12-2008)
+Version: 0.11 (14-01-2009)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, tnx.net/xap.ru, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, and html inserts helper.
 Author: Itex
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.10';
+	var $version = '0.11';
 	var $error = '';
 	//var $force_show_code = true;
 	var $sape;
@@ -122,6 +122,7 @@ class itex_money
 	var $footer = '';
 	var $beforecontent = '';
 	var $aftercontent = '';
+	var $safeurl = '';
 	//var $replacecontent = 0;
 	
 	///function __construct()  in php4 not working
@@ -220,7 +221,11 @@ class itex_money
 			$o['force_show_code'] = get_option('itex_m_sape_check');
 		}
 		$o['multi_site'] = true;
-
+		if (get_option('itex_m_sape_masking'))
+		{
+			$this->itex_m_safe_url();
+			$o['request_uri'] = $this->safeurl;
+		}
 		//$this->itex_sape_safe_url();
 		//$link = $this->itex_sape_safe_url();print_r($link);die();
 		if (get_option('itex_m_sape_enable'))
@@ -245,7 +250,6 @@ class itex_money
 			{
 				$this->aftercontent .= '<div>'.$this->sape->return_links(intval(get_option('itex_sape_links_aftercontent'))).'</div>';
 			}
-
 			$countsidebar = get_option('itex_m_sape_links_sidebar');
 			$check = get_option('itex_m_sape_check')?'<!---check sidebar '.$countsidebar.'-->':'';
 			if ($countsidebar == 'max')
@@ -790,6 +794,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				update_option('itex_m_sape_check', intval($_POST['sape_check']));
 			}
+			if (isset($_POST['sape_masking']))
+			{
+				update_option('itex_m_sape_masking', intval($_POST['sape_masking']));
+			}
 
 			if (isset($_POST['sape_widget']))
 			{
@@ -1072,6 +1080,28 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Masking of links', 'iMoney'); ?>:</label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='sape_masking' id='sape_masking'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_sape_masking')) echo " selected='selected'";
+						echo __(">Enabled</option>\n", 'iSape');
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_masking')) echo" selected='selected'";
+						echo __(">Disabled</option>\n", 'iSape');
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Masking of links', 'iMoney').'.</label>';
+
+						?>
+					</td>
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
 						<label for=""><?php echo __('Check:', 'iMoney'); ?></label>
 					</th>
 					<td>
@@ -1097,7 +1127,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://www.sape.ru/r.a5a429f57e.php"><img src="http://www.sape.ru/images/banners/sape_001.gif" border="0" /></a>
+						<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php"><img src="http://www.sape.ru/images/banners/sape_001.gif" border="0" /></a>
 					</td>
 				</tr>
 			</table>
@@ -1459,7 +1489,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a href="http://referal.begun.ru/partner.php?oid=114115214">
+						<a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">
 							<img src="http://promo.begun.ru/my/data/banners/107_04_partner.gif" alt="Покупаем рекламу. Дорого." border="0" height="60" width="468">
 						</a>
 
@@ -1997,7 +2027,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://www.tnx.ru/r.a5a429f57e.php"><img src="http://www.tnx.ru/images/banners/tnx_001.gif" border="0" /></a>
+						<a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309"><img border="0" alt="Sell links on every page of your site to thousands of advertisers!" src="http://us1.tnx.net/tnx_468_60.gif" width="468" height="60"></a>
 					</td>
 				</tr>
 			</table>
@@ -2040,6 +2070,28 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		return 1;
 	}
 	
+	function itex_m_safe_url()
+	{
+		$vars=array("p","p2",'pg','page_id');
+		$url=explode("?",strtolower($_SERVER['REQUEST_URI']));
+		if(isset($url[1]))
+		{
+			$count = preg_match_all("/(.*)=(.*)\&/Uis",$url[1]."&",$get);
+			for($i=0; $i < $count; $i++)
+				if (in_array($get[1][$i],$vars) && !empty($get[2][$i])) 
+					$ret[] = $get[1][$i]."=".$get[2][$i];
+			if (count($ret))
+			{
+				$ret = '?'.implode("&",$ret);
+		//print_r($ret);die();
+			}
+			else $ret = '';
+		}
+		else $ret = '';
+		$this->safeurl = $url[0].$ret;
+		return;
+	}
+
 }
 
 $itex_money = & new itex_money();

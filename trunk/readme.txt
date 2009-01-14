@@ -5,7 +5,7 @@ Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense
 Requires at least: 2.3
 Tested up to: 2.6.3
-Stable tag: 0.10
+Stable tag: 0.11
 
 == Description ==
 en
