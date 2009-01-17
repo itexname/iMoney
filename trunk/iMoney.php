@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: itexMoney
-Version: 0.11 (14-01-2009)
+Version: 0.12 (17-01-2009)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, tnx.net/xap.ru, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, and html inserts helper.
 Author: Itex
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.11';
+	var $version = '0.12';
 	var $error = '';
 	//var $force_show_code = true;
 	var $sape;
@@ -232,23 +232,25 @@ class itex_money
 		{
 			$this->sape = new SAPE_client($o);
 
+			if (url_to_postid($_SERVER['REQUEST_URI']) || !get_option('itex_sape_pages_enable')) 
+			{
+				if (get_option('itex_m_sape_links_beforecontent') == '0')
+				{
+					//$this->beforecontent = '';
+				}
+				else
+				{
+					$this->beforecontent .= '<div>'.$this->sape->return_links(intval(get_option('itex_sape_links_beforecontent'))).'</div>';
+				}
 
-			if (get_option('itex_m_sape_links_beforecontent') == '0')
-			{
-				//$this->beforecontent = '';
-			}
-			else
-			{
-				$this->beforecontent .= '<div>'.$this->sape->return_links(intval(get_option('itex_sape_links_beforecontent'))).'</div>';
-			}
-
-			if (get_option('itex_m_sape_links_aftercontent') == '0')
-			{
-				//$this->aftercontent = '';
-			}
-			else
-			{
-				$this->aftercontent .= '<div>'.$this->sape->return_links(intval(get_option('itex_sape_links_aftercontent'))).'</div>';
+				if (get_option('itex_m_sape_links_aftercontent') == '0')
+				{
+					//$this->aftercontent = '';
+				}
+				else
+				{
+					$this->aftercontent .= '<div>'.$this->sape->return_links(intval(get_option('itex_sape_links_aftercontent'))).'</div>';
+				}
 			}
 			$countsidebar = get_option('itex_m_sape_links_sidebar');
 			$check = get_option('itex_m_sape_check')?'<!---check sidebar '.$countsidebar.'-->':'';
@@ -514,6 +516,21 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 	function itex_m_replace($content)
 	{
+		if (get_option('itex_m_sapecontext_enable'))
+		{
+			if (url_to_postid($_SERVER['REQUEST_URI']) || !get_option('itex_sape_pages_enable')) 
+			{
+				if (defined('_SAPE_USER') || is_object($this->sapecontext)) 
+				{
+					$content = $this->sapecontext->replace_in_text_segment($content);
+					if (get_option('itex_sape_check'))
+					{
+						$content = '<!---checkcontext_start-->'.$content.'<!---checkcontext_stop-->';
+					}
+				}
+			}
+		}
+		
 		if ((strlen($this->beforecontent)) || (strlen($this->aftercontent)))
 		{
 			if ( (get_option('itex_m_sape_check')) or get_option('itex_m_tnx_check'))
@@ -789,7 +806,12 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				update_option('itex_m_sape_sapecontext_pages_enable', intval($_POST['sape_sapecontext_pages_enable']));
 			}
-
+			
+			if (isset($_POST['sape_pages_enable']) )
+			{
+				update_option('itex_m_sape_pages_enable', intval($_POST['sape_pages_enable']));
+			}
+			
 			if (isset($_POST['sape_check']))
 			{
 				update_option('itex_m_sape_check', intval($_POST['sape_check']));
@@ -1032,7 +1054,24 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo "</select>\n";
 
+						
 						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
+						
+						echo "<br/>\n";
+						echo "<select name='sape_pages_enable' id='sape_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_sape_spages_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_pages_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Show content links only on Pages and Posts.', 'iMoney').'</label>';
+
+						echo "<br/>\n";
 						?>
 					</td>
 					
@@ -1742,7 +1781,12 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				update_option('itex_m_tnx_links_footer', $_POST['tnx_links_footer']);
 			}
-
+			
+			if (isset($_POST['tnx_pages_enable']) )
+			{
+				update_option('itex_m_tnx_pages_enable', intval($_POST['tnx_pages_enable']));
+			}
+			
 			if (isset($_POST['tnx_tnxcontext_enable']) )
 			{
 				update_option('itex_m_tnx_tnxcontext_enable', intval($_POST['tnx_tnxcontext_enable']));
@@ -1992,6 +2036,22 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "</select>\n";
 
 						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
+						
+						echo "<br/>\n";
+						echo "<select name='tnx_pages_enable' id='tnx_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_tnx_spages_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_tnx_pages_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Show content links only on Pages and Posts.', 'iMoney').'</label>';
+
+						echo "<br/>\n";
 						?>
 					</td>
 					
@@ -2072,7 +2132,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	
 	function itex_m_safe_url()
 	{
-		$vars=array("p","p2",'pg','page_id');
+		$vars=array('p','p2','pg','page_id', 'm', 'cat', 'tag');
+		
 		$url=explode("?",strtolower($_SERVER['REQUEST_URI']));
 		if(isset($url[1]))
 		{
