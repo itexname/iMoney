@@ -609,7 +609,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	{
 		extract($args, EXTR_SKIP);
 		$title = get_option("itex_m_widget_links_title");
-		$title = empty($title) ? urlencode('<a href="http://itex.name" title="iMoney">iMoney</a>') :$title;
+		//$title = empty($title) ? urlencode('<a href="http://itex.name" title="iMoney">iMoney</a>') :$title;
+		$title = empty($title) ?('<a href="http://itex.name" title="iMoney">iMoney</a>') :$title;
 		if (strlen($this->sidebar_links) >23) echo $before_widget.$before_title . $title . $after_title.
 		'<ul><li>'.$this->sidebar_links.'</li></ul>'.$after_widget;
 	}
