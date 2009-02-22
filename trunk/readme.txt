@@ -133,7 +133,6 @@ Permission denied in /home/public_html/sait.ru/wp-content/plugins//sape.php
  Кодировка ссылок автоматом настраивается под кодировку блога, вручную ничего настраивать не надо.
 == Screenshots ==
 
- http://mywordpress.ru/plugins/download/imoney.png
 1. screenshot-1.png
 
 Thanks http://mywordpress.ru/plugins/imoney for the screenshot.
