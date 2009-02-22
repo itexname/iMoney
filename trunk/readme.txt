@@ -133,12 +133,11 @@ Permission denied in /home/public_html/sait.ru/wp-content/plugins//sape.php
  Кодировка ссылок автоматом настраивается под кодировку блога, вручную ничего настраивать не надо.
 == Screenshots ==
 
-1. http://mywordpress.ru/plugins/download/imoney.png
-2. imoney.png
+ http://mywordpress.ru/plugins/download/imoney.png
+1. screenshot-1.png
 
 Thanks http://mywordpress.ru/plugins/imoney for the screenshot.
 
--
 == Arbitrary section ==
 -
 == A brief Markdown Example ==
