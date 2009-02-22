@@ -131,14 +131,16 @@ Permission denied in /home/public_html/sait.ru/wp-content/plugins//sape.php
  
  Как мне настроить кодировку ссылок?
  Кодировка ссылок автоматом настраивается под кодировку блога, вручную ничего настраивать не надо.
+
 == Screenshots ==
 
 1. screenshot-1.png
 
-Thanks http://mywordpress.ru/plugins/imoney for the screenshot.
-
 == Arbitrary section ==
--
+
+-
+
 == A brief Markdown Example ==
+
 -
 
