@@ -2,10 +2,10 @@
 Contributors: itex
 Donate link: http://itex.name/donation/
 Author link: http://itex.name/
-Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense
+Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense, tnx, sape
 Requires at least: 2.3
 Tested up to: 2.6.3
-Stable tag: 0.13
+Stable tag: 0.14
 
 == Description ==
 en
