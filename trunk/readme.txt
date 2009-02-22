@@ -132,6 +132,7 @@ Permission denied in /home/public_html/sait.ru/wp-content/plugins//sape.php
  Как мне настроить кодировку ссылок?
  Кодировка ссылок автоматом настраивается под кодировку блога, вручную ничего настраивать не надо.
 == Screenshots ==
+
 1. http://mywordpress.ru/plugins/download/imoney.png
 2. imoney.png
 
