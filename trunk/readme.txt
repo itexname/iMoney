@@ -136,7 +136,7 @@ Permission denied in /home/public_html/sait.ru/wp-content/plugins//sape.php
 
 1. screenshot-1.png
 
-Thanks http://mywordpress.ru/plugins/imoney/ for the screenshot.
+Thanks http://mywordpress.ru/ for the screenshot.
 
 == Arbitrary section ==
 
