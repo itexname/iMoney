@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.14 (23-02-2009) (Defender of the Fatherland Day Edition)
+Version: 0.15 (08-03-2009) International Women's Day Ed.
 Plugin URI: http://itex.name/imoney
-Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, tnx.net/xap.ru, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, and html inserts helper.
+Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a> and html inserts helper.
 Author: Itex
 Author URI: http://itex.name/
 */
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.14';
+	var $version = '0.15';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -198,7 +198,7 @@ class itex_money
 		$this->itex_init_tnx();
 		$this->itex_init_begun();
 		$this->itex_init_ilinks();
-		
+		$this->itex_init_mainlink();
 		if (strlen($this->footer)) add_action('wp_footer', array(&$this, 'itex_m_footer'));
 
 		if ((strlen($this->beforecontent)) || (strlen($this->aftercontent)) )
@@ -218,7 +218,7 @@ class itex_money
 	{
 		if (!get_option('itex_m_sape_enable')) return 0;
 		if (!defined('_SAPE_USER')) define('_SAPE_USER', get_option('itex_m_sape_sapeuser'));
-		else $this->error .= __('_SAPE_USER already defined<br/>', 'iMoney');
+		else $this->error .= '_SAPE_USER '.__('already defined<br/>', 'iMoney');
 
 		//FOR MASS INSTALL ONLY, REPLACE if (0) ON if (1)
 		//		if (0)
@@ -618,7 +618,13 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			foreach ($l as $q)
 			{
 				$w = explode($separator,trim($q),2);
-				if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->sidebar['iMoney_ilinks']  .= $w[1];
+				if (strtolower($w[0]{0}) == 'r')
+				{
+					$w[0] = substr($w[0],1,strlen($w[0]));
+					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->sidebar['iMoney_ilinks']  .= $w[1];
+				}
+				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->sidebar['iMoney_ilinks']  .= $w[1];
+				
 			}
 		}
 		if (get_option('itex_m_ilinks_footer_enable'))
@@ -627,7 +633,12 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			foreach ($l as $q)
 			{
 				$w = explode($separator,trim($q),2);
-				if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->footer .= $w[1];
+				if (strtolower($w[0]{0}) == 'r')
+				{
+					$w[0] = substr($w[0],1,strlen($w[0]));
+					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->footer .= $w[1];
+				}
+				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->footer .= $w[1];
 			}
 		}
 		if (get_option('itex_m_ilinks_beforecontent_enable'))
@@ -636,7 +647,12 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			foreach ($l as $q)
 			{
 				$w = explode($separator,trim($q),2);
-				if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->beforecontent .= $w[1];
+				if (strtolower($w[0]{0}) == 'r')
+				{
+					$w[0] = substr($w[0],1,strlen($w[0]));
+					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->beforecontent .= $w[1];
+				}
+				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->beforecontent .= $w[1];
 			}
 		}
 		if (get_option('itex_m_ilinks_aftercontent_enable'))
@@ -645,11 +661,131 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			foreach ($l as $q)
 			{
 				$w = explode($separator,trim($q),2);
-				if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->aftercontent .= $w[1];
+				if (strtolower($w[0]{0}) == 'r')
+				{
+					$w[0] = substr($w[0],1,strlen($w[0]));
+					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->aftercontent .= $w[1];
+				}
+				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->aftercontent .= $w[1];
 			}
 		}
 		
 	}
+	
+		/**
+   	* sape init
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_mainlink()
+	{
+		if (!get_option('itex_m_mainlink_enable')) return 0;
+		if (!defined('SECURE_CODE')) define('SECURE_CODE', get_option('itex_m_mainlink_mainlinkuser'));
+		else $this->error .= 'SECURE_CODE '.__('already defined<br/>', 'iMoney');
+
+		
+		
+		
+		$file = $this->document_root . '/mainlink_'.SECURE_CODE.'/ML.php'; 
+		if (file_exists($file)) 
+		{
+			
+			require_once($file);
+		}
+		else return 0;
+		
+		$mlcfg=array();
+		if (eregi('1251', get_option('blog_charset'))) $mlcfg['charset'] = 'win';
+		else $mlcfg['charset'] = 'utf';
+		
+		if (get_option('itex_m_mainlink_check'))
+		{
+			$mlcfg['debugmode'] = get_option('itex_m_mainlink_check');
+		}
+		
+		$mlcfg['is_mod_rewrite'] = 1;  //проверить че за нах
+		$mlcfg['redirect'] = 0;
+
+		$ml->Set_Config($mlcfg);
+		
+//		if (get_option('itex_m_mainlink_masking'))
+//		{
+//			$this->itex_m_safe_url();
+//			$last_REQUEST_URI = $_SERVER['REQUEST_URI'];
+//			$_SERVER['REQUEST_URI'] = $this->safeurl;
+//		}
+//		
+		
+		if (get_option('itex_m_mainlink_enable'))
+		{
+			//$this->itex_init_mainlink_links();
+			//if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
+			//else $url = 1;
+			//if (($url) || !get_option('itex_mainlink_pages_enable')) 
+			//{
+				if (get_option('itex_m_mainlink_links_beforecontent') == '0')
+				{
+					//$this->beforecontent = '';
+				}
+				else
+				{
+					$this->beforecontent .= '<div>'.$ml->Get_Links(intval(get_option('itex_mainlink_links_beforecontent'))).'</div>';
+				}
+					
+				if (get_option('itex_m_mainlink_links_aftercontent') == '0')
+				{
+					//$this->aftercontent = '';
+				}
+				else
+				{
+					$this->aftercontent .= '<div>'.$ml->Get_Links(intval(get_option('itex_mainlink_links_aftercontent'))).'</div>';
+				}
+			//}
+			$countsidebar = get_option('itex_m_mainlink_links_sidebar');
+			$check = get_option('itex_m_mainlink_check')?'<!---check sidebar '.$countsidebar.'-->':'';
+			if ($countsidebar == 'max')
+			{
+				//$this->sidebar = '<div>'.$this->mainlink->return_links().'</div>';
+			}
+			elseif ($countsidebar == '0')
+			{
+				//$this->sidebar = '';
+			}
+			else
+			{
+				$this->sidebar_links .= '<div>'.$ml->Get_Links(intval($countsidebar)).'</div>';
+			}
+			$this->sidebar_links = $check.$this->sidebar_links;
+			
+			$countfooter = get_option('itex_m_mainlink_links_footer');
+			$check = get_option('itex_m_mainlink_check')?'<!---check footer '.$countfooter.'-->':'';
+			$this->footer .= $check;
+			if ($countfooter == 'max')
+			{
+				//$this->footer = '<div>'.$this->mainlink->return_links().'</div>';
+			}
+			elseif ($countfooter == '0')
+			{
+				//$this->footer = '';
+			}
+			else
+			{
+				$this->footer .= '<div>'.$ml->Get_Links($countfooter).'</div>';
+			}
+			$this->footer = $check.$this->footer;
+			
+			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $ml->Get_Links();
+			else
+			{
+				if  ($countsidebar == 'max') $this->sidebar_links .= $ml->Get_Links();
+				else $this->footer .= $ml->Get_Links();
+			}
+			
+		}
+
+		return 1;
+	}
+	
 	
 	/**
    	* Footer output
@@ -829,6 +965,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		<p><?php $this->itex_m_admin_begun(); ?></p><br/>
        	 		<h3>iLinks</h3>
        	 		<p><?php $this->itex_m_admin_ilinks(); ?></p><br/>
+       	 		<h3>MainLink</h3>
+       	 		<p><?php $this->itex_m_admin_mainlink(); ?></p><br/>
        	 		
 			</div>
 			<p class="submit">
@@ -1222,7 +1360,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					
 					
 				</tr>
-				<?php
+				<?php 
 				?>
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
@@ -1351,6 +1489,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			return 0;
 		}
 		//chmod($file, 0777);
+		file_put_contents($dir.'/.htaccess',"deny from all\r\n");
 		echo '
 		<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
 				'.__('Sapedir and sape.php created!', 'iMoney').'
@@ -2505,10 +2644,376 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		</div>';
 			return 0;
 		}
+		file_put_contents($dir.'/.htaccess',"deny from all\r\n");
 		//chmod($file, 0777);
 		echo '
 		<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
 				'.__('Dir and xap.php created!', 'iMoney').'
+		</div>';
+		//die();
+		return 1;
+	}
+	
+	/**
+   	* mainlink section admin menu
+   	*
+   	*/
+	function itex_m_admin_mainlink()
+	{
+		if (isset($_POST['info_update']))
+		{
+			//phpinfo();die();
+			if (isset($_POST['mainlink_mainlinkuser']) && !empty($_POST['mainlink_mainlinkuser']))
+			{
+				update_option('itex_m_mainlink_mainlinkuser', trim($_POST['mainlink_mainlinkuser']));
+			}
+			if (isset($_POST['mainlink_enable']))
+			{
+				update_option('itex_m_mainlink_enable', intval($_POST['mainlink_enable']));
+			}
+
+			if (isset($_POST['mainlink_links_beforecontent']))
+			{
+				update_option('itex_m_mainlink_links_beforecontent', $_POST['mainlink_links_beforecontent']);
+			}
+
+			if (isset($_POST['mainlink_links_aftercontent']))
+			{
+				update_option('itex_m_mainlink_links_aftercontent', $_POST['mainlink_links_aftercontent']);
+			}
+
+			if (isset($_POST['mainlink_links_sidebar']))
+			{
+				update_option('itex_m_mainlink_links_sidebar', $_POST['mainlink_links_sidebar']);
+			}
+
+			if (isset($_POST['mainlink_links_footer']))
+			{
+				update_option('itex_m_mainlink_links_footer', $_POST['mainlink_links_footer']);
+			}
+
+			if (isset($_POST['mainlink_pages_enable']) )
+			{
+				update_option('itex_m_mainlink_pages_enable', intval($_POST['mainlink_pages_enable']));
+			}
+			
+			if (isset($_POST['mainlink_check']))
+			{
+				update_option('itex_m_mainlink_check', intval($_POST['mainlink_check']));
+			}
+			
+			if (isset($_POST['mainlink_widget']))
+			{
+				$s_w = wp_get_sidebars_widgets();
+				$ex = 0;
+				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+				{
+					if ($v == 'imoney-links')
+					{
+						$ex = 1;
+						if (!$_POST['mainlink_widget']) unset($s_w['sidebar-1'][$k]);
+					}
+				}
+				if (!$ex && $_POST['mainlink_widget']) $s_w['sidebar-1'][] = 'imoney-links';
+				wp_set_sidebars_widgets( $s_w );
+
+			}
+			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
+		}
+		if (isset($_POST['mainlink_mainlinkdir_create']))
+		{
+			if (get_option('itex_m_mainlink_mainlinkuser'))  $this->itex_m_mainlink_install_file();
+		}
+
+		$file = $this->document_root . '/mainlink_'.get_option('itex_m_mainlink_mainlinkuser').'/ML.php'; 
+		if (get_option('itex_m_mainlink_mainlinkuser'))  
+		{
+			if (file_exists($file)) {}
+			else {?>
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				mainlink dir not exist!
+		</div>
+		<div style="margin:10px auto; border:3px #f00 solid; padding:10px; text-align:center;">
+				Create new mainlinkdir and ML.php? (<?php echo $file;?>)
+				<p class="submit">
+				<input type='submit' name='mainlink_mainlinkdir_create' value='<?php echo __('Create', 'iMoney'); ?>' />
+				</p>
+				<?php
+				if (!get_option('itex_m_mainlink_mainlinkuser')) echo __('Enter your mainlink UID in this box!', 'iMoney');
+				?>
+		</div>
+		
+		<?php 
+			}
+		}
+		?>
+		<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+				<tr>
+					<th valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Your mainlink UID:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<input type='text' size='50' ";
+						echo "name='mainlink_mainlinkuser'";
+						echo "id='mainlinkuser' ";
+						echo "value='".get_option('itex_m_mainlink_mainlinkuser')."' />\n";
+						?>
+						<p style="margin: 5px 10px;"><?php echo __('Enter your mainlink UID in this box.', 'iMoney');?></p>
+					</td>
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('mainlink links:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='mainlink_enable' id='mainlink_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_mainlink_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_mainlink_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+
+						echo "<select name='mainlink_links_beforecontent' id='mainlink_links_beforecontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_mainlink_links_beforecontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_mainlink_links_beforecontent') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_mainlink_links_beforecontent') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_mainlink_links_beforecontent') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_mainlink_links_beforecontent') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_mainlink_links_beforecontent') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Before content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+
+						echo "<select name='mainlink_links_aftercontent' id='mainlink_links_aftercontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_mainlink_links_aftercontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_mainlink_links_aftercontent') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_mainlink_links_aftercontent') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_mainlink_links_aftercontent') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_mainlink_links_aftercontent') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_mainlink_links_aftercontent') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('After content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+						echo "<select name='mainlink_links_sidebar' id='mainlink_links_sidebar'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_mainlink_links_sidebar')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_mainlink_links_sidebar') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_mainlink_links_sidebar') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_mainlink_links_sidebar') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_mainlink_links_sidebar') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_mainlink_links_sidebar') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_mainlink_links_sidebar') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Sidebar links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+						echo "<select name='mainlink_links_footer' id='mainlink_links_footer'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_mainlink_links_footer')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_mainlink_links_footer') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_mainlink_links_footer') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_mainlink_links_footer') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_mainlink_links_footer') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_mainlink_links_footer') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_mainlink_links_footer') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						$ws = wp_get_sidebars_widgets();
+						echo "<select name='mainlink_widget' id='mainlink_widget'>\n";
+						echo "<option value='0'";
+						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
+						echo ">".__('Active','iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						
+						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
+						
+						echo "<br/>\n";
+						?>
+					</td>
+					
+					
+				</tr>
+				
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Check:', 'iMoney'); ?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='mainlink_check' id='mainlink_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_mainlink_check')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_mainlink_check')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+
+						?>
+					</td>
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""></label>
+					</th>
+					<td align="center">
+						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851"><img src='http://www.mainlink.ru/i/banner/earth.gif' border='0'></a>
+					</td>
+				</tr>
+			</table>
+			<?php
+	}
+
+	/**
+   	* mainlink file installation
+   	*
+   	* @return  bool
+   	*/
+	function itex_m_mainlink_install_file()
+	{
+		//if (!defined('SECURE_CODE')) return 0;
+		if (!get_option('itex_m_mainlink_mainlinkuser')) return 0;
+		//file ML.php 4.003 2009-03-05
+		$mainlink_php_content = 'eNrtff1zGzeS6M/iXwFxFQ/HoUjJSd5uRFOyV1YS1/rrSfLtS4kKjyJH0pz5tTOkP06r/G3ZVK42l7oklduruvvlVVG0JqYlcSRSSZyU8qzX3QBmMMMhJdvx7W7VuRKbg48G0Gg0uhuNxuW5+mY9lr4Yi7GbBbN6w6zeSy3eZZPserVhlMvmhlFtMPuR3TAqbO0RW6pVjLVa6VGiqLNLU1PvPkpBRVbcLFQ3DJu9nZqaeotNvZOaeis19W5sbPLz3uFRq73vdE9Yz91z+icA+PCow7rOntt3j06+Z91Wr3/kPt1rfc96zlHbOWqxJ63DTu9n1mZ7zo/swH2832I7J/2fqdLRkbPX77pPQ41eYpegxUu80c/cHdFm13nSbT3r9J39n7snDus8OXC6TrdzCrDd/n5rd++Y9faOOof9VgjeNJv+jQfPGwTbaT1mPexW58htt7od54B1WPuk7e66B4z1TvbdPZY4anV//tFhTm+/QyPYOdlnh8e9vvuU9V32477LDt02DL7rOjhUdx+75LCDVq/Xabf02Fgslk5PnvUH0c7YF2631291Aa+JkrFuVg2ddXoA8ucnx87BCQyTD89hic9F8vN+75TtutDrJzAEZlaL5WbJyNeqRUNPEUz6i0NLaDduX72WX/7wzoKWZNN6JpC3tDB/d3EhP3/7GuZqWjj7+s07N0Q9xtJp1t7bf/6s5fTZMeDzJ6fbPXnKDpy+u8tR2GI9wmAsNvb1UefAOTqRYyFcn87ExjYbjfpMOl0BQi0joVrNdOVR+qFdtMx6Iw2YG/uGxss63c4PndZ+50nn6BgaPHSOHJj67vFztrcPeG6xiUo5yXZb+47D2oCQo9aO24cOuAJhMJ3tE5yaUwfx9QzqPwFqcjiGPu05Ht12JAXJCs/9Cj3X7bcBQL99/PwnmOLvjrt7P3Q6Mz6aoRuTs0tGIz9fq66bG4mJIv0rEPYXnFu3vddij/eBppGIv2eHraMWYA0I0IfwPkDA1avWJwifImIFXoFyD9yj3ZNgtSWjGKw1WA2Iha9VGDFMxA8+gOtVE3s+COA/aKQCrye4Ztxu39mDRXDgDx7/JB7vOkxUF0tAZyH8LBr1cqFo5JeqZr1uNGxqrgF8CdqDtuYL5fJaoXhPoBeoe/9UUpRstsW8SsCBuo7Ldk6ftDhfeOqhVA81jPhBhggtEr3ZOrYnfgOcPXd/su3ytjoHiCBOwBEjFHUkIbZOkQ12Owet5z/B72ed3j6uB2AIwK+IQ7k7J8+6LrApNjV5aQq5wtinzg5gqA8LY5x9CRR4/C0U6HaeOY9dWEfd0z7yzP+HtPtd6+m+Mx6i00lBlXK0J8SJiQ84MJTdVsrrs/xzPkZ0MY0cy7CsmpW3jHrNapjVjcQUUQNS8U7nqAWcsg29cX/s7EBXEPAVG7DbMCtGvmxWzEbirampKUH3Xz1GOnsG3BCrAcZ8QhJrDSDgnhXJpxAK7jIusdwj59vOQXRB4kuTwIN/6gBIwDTwnB+Q04h5TALb7kMP3H7P4ZOy3/mx2/meZnG31Q2uRsB90zJZogebFDT9s+AHVM/fhWimYHsAUouxw/3nvZP0Qad73DvB7+jBxNib7BsJVODhoLXXA+IBgEDZh26nt8fc3vFPDrCafc6yDl1ggrtA+8dyZ4EOXtxpPXFwU4JtBkYumGXXIRwAR0YkHLq7gu10vPEODPKQGPQMEwz5wYMHKZUpz5Wy60mGhI+/2HedvX6njeTt0R6Nf8ik8AFT116sX3xMAlODOE+yfmuP7cH/bdbaf+wedfoHjr9fcqwBWtsuVnJEi7jxA+8G5HF8SnTiAC6yYBq0LxLaIskhnJ8QzrE8fLToA4rigkBKgwEBvZ9i+20Ugmjjav3QcbtdWMsSTocByp/3kQkf7/WPj46xAytTq7Ros7NMAwRo3gqGDErEGdHUIpdGlaHUaT8VC8PqHkqY6XSkLMBFASVTSAI0t7FiuWDb7OaNrdj9gsUm7htWluTGTIwnFNc3Mt6v/FrBNsRnuVYslOEDmAcjCUHszsjvuTjX4QVLxlpzI7/erBYbZq2arxYqRrZgWYVHCe0hkqmWndVou9Shrw9to4gJsBHWqiWeBL8waR53jIcNSNNFF+ZrzWojX1vPl2uFkteCnZ3KIEsDhgvEyBm55PQnDq9p2vla08rbhnXfLBrZ9ULZFkP5XMoqMOWnMQkTEJSYgK41LSNfrJWMLCB1CyZporFp2pOzpUKjsKLxgZrV9Zq2uiJyhnRxFQBkmA+AI5NlWdV4AG3lb9yev3pjIcG31K/dXZTViPCBEYrOdfi2JgDA5Pi15997P6Iq7L7fdR4fH4m6wcp8e71TaGwmSHAUOaowpJStlPPwLxU01xPjnLJKQbrT9UhqVLE4p37MiAbyQg7C9HlIT+iynYn80sLiPywsrmgfLC/fyd+Fr/zV9xduLWuruqgcmteE3bDqNXtUzaRWKa/VGiktpXRTz2Y5TczR3zMNq2mcNdqXJoVUVh35gmXlrxlchobsxJQ3+qgR/hKtAsEkhKz4d/0nto3rl/2pBSIUiJFtRWr21/GAEJmdgoWMvE3yJJ4MDEdKmZmYZTSaVpUpZLS48L/vLiwt5+8uXtdWs1ktrc0JdCrCP6yQGSWVy/aQCBC3UV6anGR/5jtql/oL/WYgwX0C8v1Bqw+SJAgvIKQdgnjjiG3Pk225wBP7GlThDm2qO8e7oFpxzQn22z7smnsuyZSMZr7xqG5kp2Offvn5v33y5ef/Mj4+zv4FdeIu1BKqBXJuUIGPWj+SrAfimlAxThD6cV80j0xebJRYg2sxsC8N4jh/x6o1jGIDFouCbZyqEeuIIztz1pzgiuAgI1G8RTuomDheEPjttgGrObKmP2WRVXlNmYi82yO4kFL3eL/V7qqoSwREGoUJu1zl5lpWEHtebwQCZKfORhuLjQ0yag4lXzGsDUPh47SbyzLJCcnReTODUFa04mbBAj3BZ7fRuVntAezqmYGebNbsRpbv+ap8qtFO9cnukdPzjE7tk12QF+XqHYtsrlDcNPLrZtkgkQKajW8NL4dD1Va301sje76diszHjmMm7zrw2jgMThKIwruvAReWQk0yXk4V7PrDuWZ2FMwLDbOenY5zlnCWqv9StCTXxIuT0t8BLdkkJv6dUhN0/mxiQnn4RWjpkkdLAUk2bILpevYRlvjM3f8WNFdQ0LnRotc6AE0HFLbWviN1fIWofDOTT1TJiaYNYpyw/WRJXjo/nQkjz98KrUV35q9DI0DegkYieiUWQZErRi+0CoI4VwkOta0XIbi34j72TRsGlQjIpARvVWeFaomB7MrpZWiJIkqrkdmzKDkEkMBHDeKuSfQWwFCAGgO06VNKoLOB4ZUAdB4rVYxKzXqUX2uuGxb0QZd1I1oR5I5/amt5u1GwGgk+2AtUOqmFDaewAjKebZLkiwgQurc8tv1y7BWkfjZK2bjkT2W0usGM4maNKXLTNWr8OjSeGN20nhnjUu/XZB/rgKQJCjlwnX2yFx1/S9ItSLpoZdl1944hF09KopkTsLEfFN70by4aX7khEIVfZ9/1YKClrd3Z9axdrViMH2iwaW76F/ZuKWsSOiugeIK4iXSV5NSendXQrrZuWpXCZMXGNZYkI89gRnrOLGU3TZjhpGY3HpURklaslWvWjGWU5MHMEJM9LNtv+iDUC/sTjNZhnBe7nr11hDFe2GyDIEA0AIQ5P6gGW4GDS39zOEhyZfs8iAhoHUPPJaSt5nziczR38HmNriz0gU02IdctWnFVWU336giIctAS4ZEcJztL5gc96dkfgAFIzi1H541zTv6YgV5swNoUn7awoECdUq3YrFQgLY+sIysriNyyaYtKDxvZCB68MrWqlmxaZTuy2PSqx7Q4JiXXVxvQWc1i4TwE6WuAoU4VYbOzG3SogRMtUbcClVaBylbS9ENPaloy2JKAZGanMsqRkm0UrOKmoHjmpWu5nJbEmWUbRtWwCmUG/LFQN/BA2iqALmuxB2Zjk9nGfcqFSbN5xY+gHlUsAOkACXBCqK0zu7n2T6AFA3VYDPZnI8nMKqs0yw0TvxiuM04f2oRoWkAwYEd8ofopUb9SaBQ3YUN9pPTaeFg06g00EVKtxNojNCQXAIyovCIq8377FbmFmNaNiSuNl14VpbGPZ5X9YwAyjKhQhsLVQsO8b7A1q1AtbvKCiUBBGHe90MCSPFdXmgznzcm8h0DQJZs1NgExRqFqVjewwUQS2rRrbAqpbpr9oVmoNsx107BEup/AKtD1ivnPhsUBXxSAqSasTUMpy0u8KUpMDy2xFRgWNJCuFB4OlNpWhjeszEeiTNXYKDQMGiWhPMnWmoDZavkRLDlKBl5sK7PIq0+K6ma1ZBYBgK1MnYX+FrwY05L0Q64cseL8tSJXykuvldwvsFhyr7pacq+0XHIvtl5yL7JgcudeMbnRSyY3as3kXtuiyZ29anJnL5vc+dZN7jwLJ/eKKyd3zqWTs3FcconoyoazDkMExTAR3NGAeGErV2QKIVf83z20+Ai/JsaPQYWPiSdJBACtTJigwH6spdQtUmxySbmCQVnWU9rHFdsUaq7S4tfu7mO3T/4tJJqfRDQmwAQbrVvGhtdioFL84xzuzrnVROrinJ6jHTq3+rEZTwZhC42EDpuWlhLxywW2aRnrWW3LFwuwqW1tNpebvpwuzMb15DBcPKReBXL14GB97Sao9XlC7yqSZLQCtDXglTECMwLEWrlWvJcYXi7Uve3gyMw338woCmBMTNefufrUbT0FlanrPnbhp2/dOX7Ojpy9/dbBwXGk5BeYsyAhJaM7mvTdfET/wiaXgDYMIigsx3yxDOwkIapII1ewLwHLZ6f7nXt0IAya36PL1s5PTrfzNGjSVJVOq1mlI5xfYloRAsDToYugTmdHaNlQSsjCXB+n8v9UM6uJeK6aq8aTQ+uGcKFSSPwy9JmfiM7G1ePIVPxy2s+iBrh3kDS4QKnbv7u+sKKB2M/tTvocdGQeDVEzuSrCxWSAer9g5Y2H6BWUuNKswvDNQhn4tsRcftEolEBf4BqHaJeqQpszoEgNbxeQjc0qDQzOBgfrw4nTTDKcSQYiApPGJvi9Df0mtHLz0jankj+h6UqYMoPGcOlD6iiWSrHwcBJohgXS45eB/EEyKTU2s9r01NQbGlta/vDGQlZbBxKfXC9UzPKjmUqtWrPrsAQylGoDlmamUu++Y1QyVHXmN1NvZNZqVskglZZdqj9kdq1sljKempvBpbBh1ZrV0iRP/NV7v/1tRpulLl1O13GiM/wg6WLsLAfDwAE+eYJ4Aw34LK5vKOQcNJrqAW+BUGbmxaywUQbY4bZCaC7Ac4Ty9vFH5LOUS+fSH4MO9/FHDx48yKU+Bi2OiRLkv5IcAfksk9UZPEGxHQJ9iSNR78zVZZ2DU/a9iz6LHchy0cfPkS5nLlCdnJ/W96zDHHR1kinoA5WUgPuuPMg9RTdlH6ig4VPuMTV8d0Izy6qy/UxAQnZoQX9HAXDSCQL7owkfMc1zcdAJUlykb+HXdjwTbOdKHc3VuA8TFD0A3tfhMUvpom8QhowVDWTPTTSiDu10Vi2XGQbmD03DejQSTiobn9sKFFYHFAIniEgfTmBZtaAPZ1vZlId25XWQPaeE8IKjJawQBG6rHn+4WipF8wd/7ujoOwrmC7IBzsrYEr+j4Jl/IemrHjA3dMYSjtew2fdhje31j5HV4ZF5p9cnP/nAQYXbV69CoKP9HRAqYNMt1ar/2GCNWhN0t0n2Jfe8hcUJvPJx62kfffTgC/3S4APdy3fwCgIanA9a+27vZ5bRhbOsKvu6h50eeZ2icyw07yMx0mI+YZayU8kJWB+Fih08Yg2fh3AfL/nvSuTclkGTaBY2UFYBKcMsrSrraaLkt5t9FZiZURDzS3XLrDaACSmZcoD+wvdkOb8Q5QX8JOLUXDwjPCU4AcBEuzvkp/Kssyf9WIJIppOoCfJYkafpoME0DVvYckefNKC8/PJ+eSPPR95KBs+vBj0bV6jbq8kzDkMAkYCQL/D2Azkr4c0UdKbpebdWnux00MuW9TuHrQMh8uixAcs0jTBOjcaJWMZiY+jd6J9VSudGVXn4GsQJ52gP1Qf4b7/zDK9DtJ7uc2fY2NiwPYgkfACMJ6nBRtTi+etqFkr/0KkhrZLzbYfcykHOZ7iE3R0gE/R3OoWhlGr5Zh0G6Q3jHH2jk8Rg/xAxY1dQGwHdvtCgDOoYgsMCFfR9T5zr1Fdnl1mCiuuTkT2h/pIzPRYGnSNaMhFHokFBWqIXNiR/6FxEGRsTusYASrbDGaKCnG7gb/vH3AkU2Kr7/VGLX3ISi49Q6lUmVI1N8AMCTysoGuZ9Qy7MgUNouTxT2gVQUrJBX8rM2BhCVAQRhJ3UbtUY+ndq+riURCKU69fjVPlOSOUeJXepNC9A/t4yG+ckliTXPkIavnBDG6dMpBCBGfinAXrCA8MSWktSu7zZqJRn/xpIepvWB01caDF5Z0+jVMhBDEvnu9eHZSI0fpQeuPXzV5jjwBldEE9RFBH4wtINr9yY57X4UrMwgveitajb5/xeMCJp5An5a8hkVQGJ2IA8ekJGkV+obqD/N+Up5iOYosDkRPqNeFvaELcQL392irN7/BznzjCa0kthdWWRlcn4es94hDcsJu4Xys3w6uKJwE7NSkIUGDQl8vRwciTp4FpeM7BPAWPUQJnCeoM7nAwu9ki8r+AoVrNnNZnifU2d0WyGDXKrF+wItTOMxMO/Xq9Py/8SUzYW24a9UCylUTLU6+rIr6EjMb6vahr8JGakUm3sHCsh0oXqBRaL50RFO4/f4TugoRZMK1/mvvFRlQMa5y+92Uy/K0TrEb0nx/lXpZWRnXhb3oMgrfBJaxevPPYO3Z67I62OHbyIxpXFjnfRTHiWDrdBqdKUYuzFey/SGCg/49y53Z9o2gZ0PmMrq9mXc74SEiKASL0khJin8qHRHlQ6umP1ye5Bpwt6+5F/VuWis9aRi0EGnKM2aNOkvzNU4BU9j26dbPm0KC9EqfuBJxVzyTTIECfoHlakhKqpnpBJTb2VXt+sp22YmqKRvnkjBV+awtEn+N2uCCcTeUsOoE1Uyt5NK01Phgrk7965dnV5gZcTErV/MUtk6knqvNqycT9rANNMxOdmeS8uz8X1KKOVBzVqc+B08wBEl8IaaF4l00IJJZHPv3f9xkI+r0duKMoJHBd6ZPGBXgaqcFqKLyFemRjoulWrBIz4rGGWy5Di9Zonp3LVeGZQPNtWqVRA5lYeXpmqhbcR8U8E1WwYjfsD26iEjsuPF5hVO0zrUKT7rQ1v437BKjUr9RGNiBLi7AV/eveI5AGLLHKeBqFv9dCY0unQoOrW7JQcSJ2Pg50FF5aCOKB6JcgBJsHNPr7yOWDsCeqVUpP8A6qS+laaQkj4G+bYhEXLcyozyk7ueVaPc3duXQKEQVwo2tkz3LHleF7TDnPpHcEwpL2dBp2WfYwLgf2KWTXzOD9aoQzqIBre8+u1ulHlt3bJaCGtTsZD027YCY0UEtXtT9PZhQsMIW1EQSJjkd+QcG7J27A5iVAAtWZDS0aiq1atGkW/EMoGYqKuDHRj2FCTy4t3F1THfdrnXpfwNT0tED89PZXEq8Q4AKRBHEOJ0VCjUKj75pXX1LPfoFg45mNgK3p6izhz6CTEJ24CdJosu+KlJgRZQDrNK2XAxNbqDQy2sZlk83cXb9y+g1cWbyTjYbLLjKzywcLVawuLdMl8VLHFheW7i7eWF6/eWnoPik+HiwdLz9++dWthfnn5+s2F23eXX5DOYOwE2HhIt5s2/7boyOvafwf9vPv6m5iGmd8OE+mEXYPVjuwC2Yng3uw3U0kQZiyrWuP/giwVfYoVObdIwHZNbEBX1utNdOO2AVT8/YVl5tErw1vc6enUVM7KVbHdGUbN4yf+T/T8YBONz+PrRo0D1bcmbOjwhsFh6hlqLJuN8xprllG4l6FdbLCq2AXV2q8d55LQBDYlMjUP5Uhc27hbROy5X404YRlhm9nitiK6oSFCquCpBPrkCPn+9OzLwkAa9Y2iPAtDm5ycN9x9smGNc5Hn8a7o/k2/X3zrnZIIVXqj+4zDi6aRzU6Dluzh4fhoH0NRtQ9BG3z+Ex5Q9Gjg7o94b/uAjY35UnzUON8zq6X8TfQw9cxoyUAXMrHXbMi99PaIkQfFQdHBlbimltXILIKTOrwAufwL26uHux7DoDuAJI4/FAIP6DTgF2mRwxnHYvpZANNnQkxzkNv+eoLC0jnt0D1oPeYRqlqnXmgrCvXTUo+I1ckGnCcnENN4YIlnmVMZcfVd9BQKYB/kcGWz8M3vhU3wrZOuKaAAPLGO0JG25NqKIQxKQZ3VrpdNcmtAmvINn6IIGTvvq65BuN6ivDX8fonWtfiAKZKf5pSR8fvl9MuzSmKUsukNYYXcKmTFCNO5nwnEfX8gPMV5LJTnakwxRg5CCfciynAZwCD3kbhnPJJyWwiPSUTu/+AyiEv/EiSstqDtS7YaisrA0Vyv1ZUSwjaolsPVyxew71o3v7TE1BUrnY6lXDNEreR32FaFJe9KwKknnr5cyNlvpk07nkTfZSqLzsvD4WxrLO4dGw3TZNGkJM+co9tNzM1Q03+kvxOi4dTFOZANvO7kctPc1X1Il9R2Av0KyBWExv/s80hC6CSgavF41LQVe11WWbyVOrFeR31nncua5zqVY5q1ppGYF3kpvGajeWBVv7LOvUTX60l24/b87/JLH4g5Wa/rW4M+AxMVC3qCWmKlsGEW839o1hqGnbdgaOQTkLGHZYEUPQELeqNBqht21VZO7M5wOhART6i6pIZ1CzFPPZc5w1uHfr8EMu7e0jNX1ovlmm0QQng3+Fp5hfmO3/4d2o5Ckiut31eBurC4iGC3twVg4SBBtPtnHsc2RLvimBcxnVRYAGFesHDKBAY0SAn4keeHa9LzApNEDVgyr0058ByReN/C64OGw7QHL0X/C/9HoX+fYOVuxJnDlfUHAnNIfOTQ4dNg7NXJbNBVJ3pWaA4CWFcErMH54SdkPGfl3dVsNqIMpOv6q0xdnAk6jL2qhhhncgK21xhfMpIrk4tPFJ375lYU+lBNo+DOeEPE19fIY16NNdPZ/9kPz6qsj0gtTXrlye1SHGIqaeOjXJhREiCBdsjGB9t/pVaCbY5IjKoM8/qyjJJpGcWGcPqSRm0/TNe164sL82T04pbtsTFqfVgRqdZHFFyaX7x+RykmxY1hXTNNG7uOiuT160vsplm0anZtvTEU8q2rNxdG9iAQdIx3QZ6HKgpnlDN4TAn82nN6vc5zxL1t2DaaGE10FNmaEJ9ZmUxHR3oqno2n1JKZ17bP/1oyNdEc8TUk4pATdTy9MndhdU4WuzCXNuMY8TrJhO7D18GRg36mGHpb3J874ZSnHu9pFwqVegbjZV/wqw/1wC+XjCJdGtCZ6JeXlvCaHjoX3IE8RfqdOiEYPtVxIkcq3cV/lbo4wR3FE+QprpOruDLi12U5mA46vI5cpsnRCzQ5fJEosiYhh+bvG/fJLh0o72DMy4FAfvmlzdoDGcqPh3Mj3+AxL7wbGSnLJuA0NhYt09cLsBnNaZfxB9NSwwX/vCgaF7J9Lr51VtntXJxfmDpDtvdBcxl9COiBCh58bVbjF6qiB1ky79MY4d/RQ+QFzzVCKnruAUrA5x1fELo/PD6rZ40zDT9GY8Sb9jT+4mWVEFxlU7BW9G4IhmIEbiIjMXZbRJcddassWA26w5244F85o8vLDbPI0IO+kbeBaH3rjZpNfi8DwYkoVdf5v3jowb1jCDwTDjkIOHCbyx8qZsk7KwpUrysr9HNyWngO0dflrGjVtxRh8qxIpY+s2l1KsbPD2rdlBybMar2JPeXae3GzWRWX85KsaJhlMdo0h6d74wtWq6PGQ0lJ0bK8M6MHMBIcn3LLS84zwfAKsIxngVAC5h+LpybgJ3Ghg84gHwp6TgWmXkYwQebkTTraP4fsMAJdwqFx2HSSFAP/Dcae9OkTw7fBJ123ITplicPWwSk928HcZ52fWjwqzZhYVaonmEfG0g6geKBGdErE5hzaLXpTwj1gd27fYYkeSJ29trvjfsuNwYx61VHC41Rlf1RSV03VbGQv2KwEoY8slpXFMqqrKMCuQtZ0BnLZ5eg1JUFgmTff1Dn+VlZ9AkWrVKjXnkw3YHLj2EJ0tXuOF5Kvg5cgjmEmxQUJjqXh6MMWlJkUHlrD3Ilj6u1twRLEgwpBF0MlUcwGT5mdCtqNozd+XGYUHBfv5GuDIQ7+wz9V4pHX3Wd0j51WWvh2Px8Z3bCO5ulls0HOq8kJGSE21NxXeIrFmXcRrYDRLYRjEZwD2oj+etDCsooCMMJUqmhxpyEfQ7bjPAmex7WpA4H6MtSEZ422/bm0gWyjoxggGU9UV4ciATP10T692zHh2x2Onqsy1UNvaDzKN90CYZ0nwLKe8CHxq0jtzm6LxZUyqIcUwxfyApHCQbcEcbOGphA0hMDvALXgzVJ+DxokZn6b3tNDqR4AoLNfltgwGqjWcqNCFu1sBIyX0tl4lmlrtRpGN+AaL+MlMSOeiqPjjfIdStBSm41CsQjaC11mMx5Cd42H9TIOASonBw0ZxsMVuUdzX3SRkAVgGCAUwYjxePlTOFn8VDu2vb0dI+OKMojX7Uv7ji/V07WWZr2O11p4N3V5J1DcNlTlenn/EGplScW5X7C8/RM+0Vkrq73hB3VjiXEsrCvhmb0cwbcQhA57w5Tun4thGr8BwP3/0ZZkcUOXHxoDG2MpKH3vzWloHI8mcN6htj4Hf81pKFiACEkWGE2fgXToIvYmKG1ACl8GOOiFW9dYyGEUc7Zj/NWCQ/fAFYeNsH3TE0kntKq8OvPvvU+DxzuEwSDAwsnOi43InztQb/AmYl4wPx7S5sPbdxfZB7eXlhlaIGIyoJ+SeXfxeszzkcNYf3gjE3PhR5I1G+tJdq9msgQVnv/g6uLSwrJO7sHXFn579/1YIJ4gYSoZ86+lAkBDwPtcjeigPBxEoR1gewiEBMHHhrgPUWzAmyQ7+04SCygKaiyssPpd8ZRUEe0QJ0NR973Ui7Gv5YspberekfP4eN/nxMq7WdRXZMxuGy8ZQ1emWbt11Gl1+/p51Aou62VnpwgvX7oYq1FEf3efsmetXl+Usb1CX7j7CLHfdjlEct/Akg7h6pLf/p+of9DydwNb8F7MD7Y+ADb8tJLYexzEjLIhCkAwbD/0owZoVg6aRIq3bcP3H7VkFBxVJiCIqL35UxfWiyVgXxMXKagfRlbjGUotJUG5PKOk8GsyPIFevCpuAnX5l8gEvSDy8EeaGo0F7oVmZ399aYrjl24ZyNdm9o67u63vY2oIYW8pfn0M4vuuCzLf4R69ZQfzOnBQ5JX+/OCUn3UgLaOZxR88t8J738iFP1xaXrgZk0IbACGZjQ8BfgkVK6bLV2HEvU8ebNS7nm81ifJa5HckqICKextvZnAgyitv/BU95c0V/pLJwJ2zcHyG4OseyMrUQA3QovqGgrt3dPwt3S4eApVsUrAPJMLW5Du/v4YRbviTINxQR5HjElr6+vWltKklFZsu/Ztfuv3e8u+vLi5gPaSFGX6HMzOsbXFAgq0rm6bdXIOvxJ0P7uRvLyUZ0M1bOm7+sPv//votjUNORA1DbVQNJRwLvQznv8V4eAyKxq4fa5YeOup2fKprBSfJezaGJhk37In1GnBOiz/0o6mCP5INleKF5+jvmcFbCoG5+0qZO+ocfysxCmgkLucC9l6MWKiltWTAzKqNf7RSmPzn1ZlxE+NuJBMSpq7Dji5/ZwJamyRiek+KXqFUrANDZlcNDJ6VcFNyemVCcnJaH6cnReB/YWFTUDqnfsxoKLdpgwTlrTivnUxMVdkCR2nDe+lphN6dklGFw7cng0WVW7aKOWaYt8jwuko8g3AcllHxDQZJNxynQI2KQimRYw1EAhDYQf1gOHYGaoSP/ocXB01bPe9TRUoFDdvy/RtPQOTvR/EBKa91SQkQIxUayOf9b6loocQDQ2JGpd54NJ6rflhrskrTbmDwTmb7ZcYxyhlV9EpYTZC9RWBjDaNuetEUvbLLkFIACNXaA0Z+3Gh0EcsQQ06KCH5e+SWK/EjiI0OthMq/MZ1ipJRgDWz0jUspv4ZhYSQxGEGp9qAaTrYMuw66C7BvEX3AK/AB7CWMXk1kPHDoPfsfGUbC85DhFb1rY5hMjNPMaMZm+NEsZVKBa3RnqXDfLJSRKmbY4KUI3cffAjY6Iy46oS8/ubb7+QPQ0IN+SHVog+N17RFLvPEWtgL5M/B7Wgc0YSVcH9PTXl/ReYff28JOzjABlfwiWKMmUt+YzlV5UqAUuhIDTukSj4cnfy7mCzBH6KClavoBTM3XavdMjMRpFCzeijdfdLYXkSP+uRmYgDem+ZQFgF+173FkgEYTAHEH1A6YXR7TBpCjaAVsEgommdQI8POS7lUEouGKO2LmgYci4sfUAMqCGD1VhD8ClFRrMHdFjNvqT9likw7TjRJDCYYRIxf9w9m59JY3BO8BJY5GZSBU8G2v4BIGP4W+3LyhjhT/55EyNasZXO5fOiR5dvGtUf7o5glM3GcYisl5+mPLf4RXvB9Bb/BSXKau03afHLjfdlv+TH8GyhDFZkd+u0ueBsegosAW6TEEr+yXTl91Lg+/DeuV+/QEzUEtz9sWh+U9RHl4jA9RgrQ5I8iaqnxDXQ0FkEKLd7/t4FvHowtCSvd4nwr3BxlEZLd9BHCtu/3ktH+CtizFbBugya/wydUWvcu16/b6x4ewMUWxBw+wUqGjxJrvEBeIKuWDPasE/pbGuI4cm9snxpGrwpJKKLRPQHz/v0my0XmMwHeukhlvTEfj7RAUuSc+3r7wqA/niUczDSLsWafXh47vHe/5YxFp5MrQCXMGORUC/cQc+AwHAIdvOQQ4hKfne7caXoRN0JAJySSBeC+oowx9zOmYQp21lMfL8dFM/lRjazxMVZ7fznNhFwmv8bjyjpy4ru6rPKdh/idnTN7deDrAV95RQrwC/yC/hijblIjkRh4/AzfWPJd0DZQVFEU8wUtxVoefwC/RZIbfec/bbJpXAUGQeJZqIaX7OklG54cjweghGxxBksFEKUxd8PUG8Ri5csO/RQGpkGx3BWPswHfgHfQY6iMn3KVqRtzzxlc4MFqk+NIUsQlF9YvpmHqJHA8FqTfqK6pYnZYLPZz8GF+ply95+pnS4BTokXPAlpau43O08M9MjMvE8v1lYQJSoVH+5fHJyV+J1+fZfdNqNAvlbNx72l3clZ+DPTk7fYEiT24p3kjbcTY5OUuAoGsvBNCs1EEsHQ2T/nLkY4X8cED79JP/Yp988cUnf/ny39kn//rZ5xodDvA15gSeju+7NIsH9EYM7nmwKwXf3hZy7Ut1XJjdw90ZNiAmJqQnYog+c54Cq8BbMvx15NCT8lSWv4vTxxptyL8kXl98zd29IF5svORPhOwIRi7lDOC/pScKJcDSAV7jv+HCnzKmIGvSWvP+wvKKxlsR4deCObbpa6rqE2ZeDNi/yEN/8d4mkNCASTd0iZ5DpgEh8OiHb0OlMpFAvHCkwdi5gdzomty7Uh/2RulEICipWicanP9mmuiLl+BX95KiQXieAQKCcvieMNGVJFgsGojweRAg+FcIQMjLZaC6HaxvRwLwOoAmJ4ok3YoEqIQOlkDVCOMebpTEjGeXGDSSRxKSuGsiwItPH7RIGDJv6q0ROXVKmjJ7Smo0LP9U3euLl6J0x0vzEXiIEqoi3ERTrBJ2TcBXozj6VOonDiH9QMRFCUpNDE14IC+jvKcVDqTth5pQyY/8c1R6koavcz1KS6Hw6Bk1+SxtICjgOd6mDUNQAITPQHkiL4wD9N8/JqFubvb/A5+b6jE=';
+		$mainlink_php_content = gzuncompress(base64_decode($mainlink_php_content));
+		$file = $this->document_root . '/mainlink_'.get_option('itex_m_mainlink_mainlinkuser').'/ML.php'; 
+		$dir = dirname($file);
+		//print_r($file.' '.$dir );die();
+		if (!@mkdir($dir, 0777))
+		{
+			echo '
+
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.__('Can`t create mainlink dir!', 'iMoney').'
+		</div>';
+			return 0;
+		}
+		chmod($dir, 0777);  //byli gluki s mkdir($dir, 0777)
+		if (!file_put_contents($file,$mainlink_php_content))
+		{
+			echo '
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.__('Can`t create ', 'iMoney').'ML.php!
+		</div>';
+			return 0;
+		}
+		file_put_contents($dir.'/.htaccess',"deny from all\r\n");
+		file_put_contents($dir.'/'.get_option('itex_m_mainlink_mainlinkuser').'.sec',get_option('itex_m_mainlink_mainlinkuser')."\r\n");
+		//chmod($file, 0777);
+		echo '
+		<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
+				'.__('Dir and Ml.php created!', 'iMoney').'
 		</div>';
 		//die();
 		return 1;
@@ -2561,6 +3066,6 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 }
 
-$itex_money = & new itex_money();
+if (function_exists(add_action)) $itex_money = & new itex_money();
 
 ?>
