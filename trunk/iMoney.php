@@ -995,7 +995,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			?>		
 			
 			<h2><?php echo $this->__('iMoney Options', 'iMoney');?></h2>
-			
+			<?php if ( '01_April' == date('d_F')) echo '<center><h1>1 April day = '.strrev('1 April day')." :) </h1></center>";?>
 			                       
        			<!-- Main -->
         		
