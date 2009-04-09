@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: iMoney 
-Version: 0.17 (05-04-2009) Nirvana Edition.
+Plugin Name: iMoney
+Version: 0.18 (09-04-2009) Tamerlan Edition.
 Plugin URI: http://itex.name/imoney
-Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a> and html inserts helper.
+Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?d=1&ref=17729">adskape.ru</a> and html inserts helper.
 Author: Itex
 Author URI: http://itex.name/
 */
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.17';
+	var $version = '0.18';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -129,6 +129,7 @@ class itex_money
 	//var $debug = 1;
 	var $debuglog = '';
 	var $memory_get_usage = 0; //start memory_get_usage
+	var $get_num_queries = 0; //start get_num_queries
 	//var $replacecontent = 0;
 	
 	/**
@@ -139,7 +140,7 @@ class itex_money
 	{
 		if (substr(phpversion(),0,1) == 4) $this->php4(); //fix php4 bugs
 		add_action('widgets_init', array(&$this, 'itex_m_init'));
-		add_action("widgets_init", array(&$this, 'itex_m_widget_init'));
+		//add_action("widgets_init", array(&$this, 'itex_m_widget_init'));
 		add_action('admin_menu', array(&$this, 'itex_m_menu'));
 		add_action('wp_footer', array(&$this, 'itex_m_footer'));
 		$this->document_root = ($_SERVER['DOCUMENT_ROOT'] != str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]))?(str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"])):($_SERVER['DOCUMENT_ROOT']);
@@ -207,6 +208,11 @@ class itex_money
 	function itex_m_init()
 	{
 		if ( function_exists('memory_get_usage') ) $this->memory_get_usage = memory_get_usage();
+		if ( function_exists('get_num_queries') ) $this->get_num_queries = get_num_queries();
+		
+		//echo $this->get_num_queries;//die();
+		
+		
 		if (get_option('itex_m_global_masking')){
 			$this->itex_m_safe_url();
 			$last_REQUEST_URI = $_SERVER['REQUEST_URI'];
@@ -223,8 +229,13 @@ class itex_money
 		$this->itex_init_ilinks();
 		$this->itex_init_mainlink();
 		$this->itex_init_linkfeed();
+		$this->itex_init_adskape();
+		
+		$this->itex_m_widget_init();
 		if (strlen($this->footer)) add_action('wp_footer', array(&$this, 'itex_m_footer'));
 
+		//echo get_num_queries();die();
+		
 		if ((strlen($this->beforecontent)) || (strlen($this->aftercontent)) )
 		{
 			$this->itex_debug('strlenbeforecontent = '.strlen($this->beforecontent));
@@ -240,6 +251,12 @@ class itex_money
 		}
 		//if ( function_exists('memory_get_usage') ) $this->memory_get_usage['stop'] = memory_get_usage();
 		if ( function_exists('memory_get_usage') ) $this->itex_debug("memory start/end/dif ".$this->memory_get_usage.'/'.memory_get_usage().'/'.(memory_get_usage()-$this->memory_get_usage));
+		
+		//if ( function_exists('get_num_queries') ) $this->itex_debug("get_num_queries start/end/dif ".$this->get_num_queries.'/'.get_num_queries().'/'.get_num_queries()-$this->get_num_queries.'/');
+		//if ( function_exists('get_num_queries') ) $this->itex_debug("get_num_queries start/end/dif ".intval($this->get_num_queries).' / '.intval(get_num_queries()).'/'.intval(get_num_queries())-intval($this->get_num_queries).'/');
+		//if ( function_exists('get_num_queries') ) $this->itex_debug("get_num_queries start/end/dif ".intval($this->get_num_queries).' / '.intval(get_num_queries()).' / ');
+		if ( function_exists('get_num_queries') ) $this->itex_debug("get_num_queries start/end/dif ".intval($this->get_num_queries).'/'.intval(get_num_queries()).'/'.(intval(get_num_queries())-intval($this->get_num_queries)));
+		//echo get_num_queries();die();
 		return 1;
 	}
 
@@ -307,7 +324,6 @@ class itex_money
 				}
 				else
 				{
-					
 					$this->aftercontent .= '<div>'.$css.$this->itex_init_sape_get_links(intval(get_option('itex_sape_links_aftercontent'))).'</div>';
 				}
 			}
@@ -554,6 +570,7 @@ google_ad_client = "'.get_option('itex_m_adsense_id').'"; google_ad_slot = "'.ge
 					case 'sidebar':
 						{
 							$this->sidebar['imoney_adsense_'.$block] = '<div style="clear:right;">'.$script.'</div>';
+							//die('imoney_adsense_'.$block);
 							break;
 						}
 					case 'footer':
@@ -630,6 +647,60 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		return 1;
 	}
 
+	/**
+   	* adskape init
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_adskape()
+	{
+		if (!get_option('itex_m_adskape_enable')) return 0;
+
+		if (get_option('itex_m_adskape_id'));
+		else $this->error .= __('Adskape Id not defined<br/>', 'iMoney');
+
+		$maxblock = 4; //max  adskape blocks - 1
+		for ($block=1;$block<$maxblock;$block++)
+		{
+			if (get_option('itex_m_adskape_b'.$block.'_enable'))
+			{
+				$size = get_option('itex_m_adskape_b'.$block.'_size');
+				//$size = explode('x',$size);
+
+				//$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
+				$script = '<script type="text/javascript" src="http://p'.get_option('itex_m_adskape_id').'.adskape.ru/adout.js?p='.get_option('itex_m_adskape_id').'&t='.$size.'"></script>';
+				$pos = get_option('itex_m_adskape_b'.$block.'_pos');
+				switch ($pos)
+				{
+					case 'sidebar':
+						{
+							$this->sidebar['imoney_adskape_'.$block] = '<div style="clear:right;">'.$script.'</div>';
+							break;
+						}
+					case 'footer':
+						{
+							$this->footer .= '<p style="float:left;">'.$script.'</p>';
+							break;
+						}
+					case 'beforecontent':
+						{
+							$this->beforecontent .= '<p style="float:left;">'.$script.'</p>';
+							break;
+						}
+					case 'aftercontent':
+						{
+							$this->aftercontent .= '<p style="float:left;">'.$script.'</p>';
+							break;
+						}
+					default: {}
+				}
+
+			}
+		}
+		return 1;
+	}
+	
+	
 	/**
    	* Html init
    	*
@@ -855,7 +926,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		if (get_option('itex_m_global_debugenable'))
 		{
 			$o['force_show_code'] = 1;
-			$o['verbose'] = 1;
+			//$o['verbose'] = 1;  //в футере инфу выдаст
 		}
 		$linkfeed = new LinkfeedClient($o);
 		
@@ -945,10 +1016,15 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	function itex_m_footer()
 	{
 		echo $this->footer;
-		if (get_option('itex_m_global_debugenable')){
-			
-			echo '<!--- iMoneyDebugLogStart'.$this->debuglog.' iMoneyDebugLogEnd --->';
-			echo '<!--- iMoneyDebugErrorsStart'.$this->error.' iMoneyDebugErrorsEnd --->';
+		if (get_option('itex_m_global_debugenable'))
+		{
+			//echo 'is_user_logged_in'.intval(is_user_logged_in()).'_'.intval(get_option('itex_m_global_debugenable_forall'));//die();
+		
+			if ((intval(is_user_logged_in())) || intval(get_option('itex_m_global_debugenable_forall')))
+			{
+				echo '<!--- iMoneyDebugLogStart'.$this->debuglog.' iMoneyDebugLogEnd --->';
+				echo '<!--- iMoneyDebugErrorsStart'.$this->error.' iMoneyDebugErrorsEnd --->';
+			}
 		}
 	}
 	
@@ -1005,19 +1081,72 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
    	*/
 	function itex_m_widget_init()
 	{
+		//$this->itex_debug('All possible Widgets '.var_export($this->sidebar, true));
+//		if (count($this->sidebar))
+//		{
+//			foreach ($this->sidebar as $k => $v)
+//			{
+//				if (function_exists('register_sidebar_widget')) 
+//				{
+//					//register_sidebar_widget($k, array(&$this, 'itex_m_widget'));
+//					//$newfunc = create_function('$arg', 'extract($args, EXTR_SKIP);
+//		//echo $before_widget.$before_title . $title . $after_title.
+//		//"<ul><li>".$this->sidebar[$widget_name]."</li></ul>".$after_widget;
+//		//$this->itex_debug("!widget init ".$widget_name);');
+//					//register_sidebar_widget($k, $newfunc);
+//
+//				}
+//				if (function_exists('register_widget_control')) 
+//				{
+//					//register_widget_control($k, array(&$this, 'itex_m_widget_control'), 300, 200 );
+//					//$newfunc = create_function('$arg', 'echo "<p>Dynamic widget control for '.$k.' </p>";');
+//					//register_widget_control($k, $newfunc, 300, 200 );
+//					
+//				}
+//				$this->itex_debug('Widget '.$k.'= '.$v);
+//				
+//			}
+//		} 
+		if (function_exists('register_sidebar_widget')) register_sidebar_widget('iMoney Dynamic', array(&$this, 'itex_m_widget_dynamic'));
+		if (function_exists('register_widget_control')) register_widget_control('iMoney Dynamic', array(&$this, 'itex_m_widget_control_dynamic'), 300, 200 );
+					
+		if (function_exists('register_sidebar_widget')) register_sidebar_widget('iMoney Links', array(&$this, 'itex_m_widget_links'));
+		if (function_exists('register_widget_control')) register_widget_control('iMoney Links', array(&$this, 'itex_m_widget_links_control'), 300, 200 );
+		//$ws = wp_get_sidebars_widgets();
+		//$this->itex_debug('All registered Widgets '.var_export($ws, true));
+		
+	}
+
+	/**
+   	* Dynamic widget
+   	*
+   	* @param   array   $args   arguments for widget
+    */
+	function itex_m_widget_dynamic($args)
+	{
+		extract($args, EXTR_SKIP);
+		$this->itex_debug('All possible Widgets '.var_export($this->sidebar, true));
 		if (count($this->sidebar))
 		{
 			foreach ($this->sidebar as $k => $v)
 			{
-				if (function_exists('register_sidebar_widget')) register_sidebar_widget($k, array(&$this, 'itex_m_widget'));
-				if (function_exists('register_widget_control')) register_widget_control($k, array(&$this, 'itex_m_widget_control'), 300, 200 );
+				echo $before_widget.$before_title .  $after_title.
+				'<ul><li>'.$v.'</li></ul>'.$after_widget;
+				$this->itex_debug('widget init '.$k);
 			}
 		}
-		if (function_exists('register_sidebar_widget')) register_sidebar_widget('iMoney Links', array(&$this, 'itex_m_widget_links'));
-		if (function_exists('register_widget_control')) register_widget_control('iMoney Links', array(&$this, 'itex_m_widget_links_control'), 300, 200 );
 	}
 
 	/**
+   	* Dynamic widget control
+   	*
+   	*/
+	function itex_m_widget_dynamic_control()
+	{
+		echo '<p>Dynamic widget control for iMoney</p>';
+	}
+	
+		/**
    	* Dynamic widget
    	*
    	* @param   array   $args   arguments for widget
@@ -1027,6 +1156,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		extract($args, EXTR_SKIP);
 		echo $before_widget.$before_title . $title . $after_title.
 		'<ul><li>'.$this->sidebar[$widget_name].'</li></ul>'.$after_widget;
+		$this->itex_debug('!widget init '.$widget_name);
 	}
 
 	/**
@@ -1035,9 +1165,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
    	*/
 	function itex_m_widget_control()
 	{
-		
+		echo '<p>Dynamic widget control for iMoney</p>';
 	}
-	
 	/**
    	* Links widget
    	*
@@ -1048,7 +1177,13 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		extract($args, EXTR_SKIP);
 		$title = get_option("itex_m_widget_links_title");
 		//$title = empty($title) ? urlencode('<a href="http://itex.name" title="iMoney">iMoney</a>') :$title;
-		$title = empty($title) ?('<a href="http://itex.name/imoney" title="iMoney">iMoney</a>') :$title;
+		$itex = array('<a href="http://itex.name/imoney" title="iMoney">iMoney</a>','<a href="http://itex.name/" title="itex">itex</a>');
+		if (empty($title)) 
+		{
+			$title = $itex[rand(0,count($itex)-1)];
+			update_option("itex_m_widget_links_title", $title);
+		}
+		
 		if (strlen($this->sidebar_links) >23) echo $before_widget.$before_title . $title . $after_title.
 		'<ul><li>'.$this->sidebar_links.'</li></ul>'.$after_widget;
 	}
@@ -1061,7 +1196,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	function itex_m_widget_links_control()
 	{
 		$title = get_option("itex_m_widget_links_title");
-		$title = empty($title) ? '<a href="http://itex.name/imoney" title="iMoney">iMoney</a>' :$title;
+		$itex = array('<a href="http://itex.name/imoney" title="iMoney">iMoney</a>','<a href="http://itex.name/" title="itex">itex</a>');
+		$title = empty($title) ? $itex[rand(0,count($itex)-1)] :$title;
 		if ($_POST['itex_m_widget_links_Submit'])
 		{
 			//$title = htmlspecialchars($_POST['itex_m_widget_title']);
@@ -1074,6 +1210,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
     			<textarea name="itex_m_widget_links_title" id="itex_m_widget_links" rows="1" cols="20">'.$title.'</textarea>
     			<input type="hidden" id="" name="itex_m_widget_links_Submit" value="1" />
   			</p>';
+		//print_r($this->debuglog);//die();
 	}
 
 	/**
@@ -1120,6 +1257,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<?php 
         			?>
         		<ul style="text-align: center;font-weight: bold;font-size: 14px;">
+        			<li style="display: inline;"><a href="#itex_global" onclick='document.getElementById("itex_global").style.display="";'>Global</a></li>
         			<li style="display: inline;"><a href="#itex_adsense" onclick='document.getElementById("itex_adsense").style.display="";'>Adsense</a></li>
         			<li style="display: inline;"><a href="#itex_html" onclick='document.getElementById("itex_html").style.display="";'>Html</a></li>
         			<li style="display: inline;"><a href="#itex_sape" onclick='document.getElementById("itex_sape").style.display="";'>Sape</a></li>
@@ -1128,30 +1266,32 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<li style="display: inline;"><a href="#itex_mainlink" onclick='document.getElementById("itex_mainlink").style.display="";'>MainLink</a></li>
         			<li style="display: inline;"><a href="#itex_ilinks" onclick='document.getElementById("itex_ilinks").style.display="";'>iLinks</a></li>
         			<li style="display: inline;"><a href="#itex_linkfeed" onclick='document.getElementById("itex_linkfeed").style.display="";'>Linkfeed</a></li>
+        			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
         		
         		</ul>
         		<p class="submit">
 				<input type='submit' name='info_update' value='<?php echo __('Save Changes', 'iMoney'); ?>' />
 				</p>
-        		<h3><a href="#itex_global" name="itex_global">Global</a></h3>
+        		<h3><a href="#itex_global" name="itex_global" onclick='document.getElementById("itex_global").style.display="";'>Global</a></h3>
        	 		<div id="itex_global"><?php $this->itex_m_admin_global(); ?></div>
         		<h3><a href="#itex_adsense" name="itex_adsense" onclick='document.getElementById("itex_adsense").style.display="";'>Adsense</a></h3>
        	 		<div id="itex_adsense" ><?php $this->itex_m_admin_adsense(); ?></div>
+       	 		<h3><a href="#itex_begun" name="itex_begun" onclick='document.getElementById("itex_begun").style.display="";'>Begun</a></h3>
+       	 		<div id="itex_begun"><?php $this->itex_m_admin_begun(); ?></div>
+       	 		<h3><a href="#itex_adskape" name="itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></h3>
+       	 		<div id="itex_adskape"><?php $this->itex_m_admin_adskape(); ?></div>
        	 		<h3><a href="#itex_html" name="itex_html" onclick='document.getElementById("itex_html").style.display="";'>Html</a></h3>
        	 		<div id="itex_html"><?php $this->itex_m_admin_html(); ?></div>
        	 		<h3><a href="#itex_sape" name="itex_sape" onclick='document.getElementById("itex_sape").style.display="";'>Sape</a></h3>
        	 		<div id="itex_sape"><?php $this->itex_m_admin_sape(); ?></div>
        	 		<h3><a href="#itex_tnx" name="itex_tnx" onclick='document.getElementById("itex_tnx").style.display="";'>Tnx/Xap</a></h3>
        	 		<div id="itex_tnx"><?php $this->itex_m_admin_tnx(); ?></div>
-       	 		<h3><a href="#itex_begun" name="itex_begun" onclick='document.getElementById("itex_begun").style.display="";'>Begun</a></h3>
-       	 		<div id="itex_begun"><?php $this->itex_m_admin_begun(); ?></div>
        	 		<h3><a href="#itex_mainlink" name="itex_mainlink" onclick='document.getElementById("itex_mainlink").style.display="";'>MainLink</a></h3>
        	 		<div id="itex_mainlink"><?php $this->itex_m_admin_mainlink(); ?></div>
        	 		<h3><a href="#itex_ilinks" name="itex_ilinks" onclick='document.getElementById("itex_ilinks").style.display="";'>iLinks</a></h3>
        	 		<div id="itex_ilinks"><?php $this->itex_m_admin_ilinks(); ?></div>
        	 		<h3><a href="#itex_linkfeed" name="itex_linkfeed" onclick='document.getElementById("itex_linkfeed").style.display="";'>Linkfeed</a></h3>
        	 		<div id="itex_linkfeed"><?php $this->itex_m_admin_linkfeed(); ?></div>
-       	 		
        	 		
        	 		<?php 
        	 		if(!get_option('itex_m_global_collapse')){ ?>
@@ -1164,12 +1304,29 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 			document.getElementById("itex_mainlink").style.display="none";
        	 			document.getElementById("itex_ilinks").style.display="none";
        	 			document.getElementById("itex_linkfeed").style.display="none";
+       	 			document.getElementById("itex_adskape").style.display="none";
+       	 			document.getElementById("itex_global").style.display="none";
        	 		</script>	
        	 		<?php } ?>
 			</div>
+			
 			<p class="submit">
 				<input type='submit' name='info_update' value='<?php echo __('Save Changes', 'iMoney'); ?>' />
 			</p>
+			
+			<ul style="text-align: center;font-weight: bold;font-size: 14px;">
+        			<li style="display: inline;"><a href="#itex_global" onclick='document.getElementById("itex_global").style.display="";'>Global</a></li>
+        			<li style="display: inline;"><a href="#itex_adsense" onclick='document.getElementById("itex_adsense").style.display="";'>Adsense</a></li>
+        			<li style="display: inline;"><a href="#itex_html" onclick='document.getElementById("itex_html").style.display="";'>Html</a></li>
+        			<li style="display: inline;"><a href="#itex_sape" onclick='document.getElementById("itex_sape").style.display="";'>Sape</a></li>
+        			<li style="display: inline;"><a href="#itex_tnx" onclick='document.getElementById("itex_tnx").style.display="";'>Tnx/Xap</a></li>
+        			<li style="display: inline;"><a href="#itex_begun" onclick='document.getElementById("itex_begun").style.display="";'>Begun</a></li>
+        			<li style="display: inline;"><a href="#itex_mainlink" onclick='document.getElementById("itex_mainlink").style.display="";'>MainLink</a></li>
+        			<li style="display: inline;"><a href="#itex_ilinks" onclick='document.getElementById("itex_ilinks").style.display="";'>iLinks</a></li>
+        			<li style="display: inline;"><a href="#itex_linkfeed" onclick='document.getElementById("itex_linkfeed").style.display="";'>Linkfeed</a></li>
+        			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
+        	</ul>
+        		
 			<p align="center">
 				<?php echo __("Powered by ",'iMoney')."<a href='http://itex.name' title='iTex iMoney'>iTex iMoney</a> ".__("Version:",'iMoney').$this->version; ?>
 			</p>				
@@ -1254,7 +1411,12 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				update_option('itex_m_global_debugenable', intval($_POST['global_debugenable']));
 			}
-
+			
+			if (isset($_POST['global_debugenable_forall']))
+			{
+				update_option('itex_m_global_debugenable_forall', intval($_POST['global_debugenable_forall']));
+			}
+			
 			if (isset($_POST['global_masking']))
 			{
 				update_option('itex_m_global_masking', intval($_POST['global_masking']));
@@ -1265,6 +1427,33 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				update_option('itex_m_global_collapse', !intval($_POST['global_collapse']));
 			}
 			
+			if ((isset($_POST['global_widget_links'])) || (isset($_POST['global_widget_dynamic'])))
+			{
+				$s_w = wp_get_sidebars_widgets();
+				$ex = 0;
+				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+				{
+					if ($v == 'imoney-links')
+					{
+						$ex = 1;
+						if (!$_POST['global_widget_links']) unset($s_w['sidebar-1'][$k]);
+					}
+				}
+				if (!$ex && $_POST['global_widget_links']) $s_w['sidebar-1'][] = 'imoney-links';
+				$ex = 0;
+				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+				{
+					if ($v == 'imoney-dynamic')
+					{
+						$ex = 1;
+						if (!$_POST['global_widget_dynamic']) unset($s_w['sidebar-1'][$k]);
+					}
+				}
+				if (!$ex && $_POST['global_widget_dynamic']) $s_w['sidebar-1'][] = 'imoney-dynamic';
+				wp_set_sidebars_widgets( $s_w );
+			}
+			
+						
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		
@@ -1310,10 +1499,67 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo ">".__("Disabled", 'iMoney')."</option>\n";
 						echo "</select>\n";
 
-						echo '<label for="">'.__('Debug log in footer. Dont leave this parameter switched Enabled for a long time, because in this case it will disclose your private data like SAPE UID', 'iMoney').'.</label>';
+						echo '<label for="">'.__('Debug log in footer. For see debug user must register', 'iMoney').'.</label>';
+						
+						echo "<br/>";
+						
+						echo "<select name='global_debugenable_forall' id='global_debugenable_forall'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_global_debugenable_forall')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_global_debugenable_forall')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Debug log in footer for all, who open the site. Dont leave this parameter switched Enabled for a long time, because in this case it will disclose your private data like SAPE UID', 'iMoney').'.</label>';
+						
 						?>
 					</td>
 				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Widgets settings:', 'iMoney'); ?></label>
+					</th>
+					<td>
+						<?php
+						$ws = wp_get_sidebars_widgets();
+						
+						
+						echo "<select name='global_widget_links' id='global_widget_links'>\n";
+						echo "<option value='0'";
+						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
+						echo ">".__('Active','iMoney')."</option>\n";
+
+						echo "</select>\n";
+						
+						echo '<label for="">'.__('Widget Links Active', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						
+						echo "<select name='global_widget_dynamic' id='global_widget_dynamic'>\n";
+						echo "<option value='0'";
+						if (count($ws['sidebar-1'])) if(!in_array('imoney-dynamic',$ws['sidebar-1'])) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if (count($ws['sidebar-1'])) if (in_array('imoney-dynamic',$ws['sidebar-1'])) echo " selected='selected'";
+						echo ">".__('Active','iMoney')."</option>\n";
+
+						echo "</select>\n";
+						
+						echo '<label for="">'.__('Widget Dynamic Active', 'iMoney').'</label>';
+
+						?>
+					</td>
+				</tr>
+				
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
 						<label for=""><?php echo __('Collapse headlines settings:', 'iMoney'); ?></label>
@@ -1397,22 +1643,22 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 			
 			
-			if (isset($_POST['sape_widget']))
-			{
-				$s_w = wp_get_sidebars_widgets();
-				$ex = 0;
-				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-				{
-					if ($v == 'imoney-links')
-					{
-						$ex = 1;
-						if (!$_POST['sape_widget']) unset($s_w['sidebar-1'][$k]);
-					}
-				}
-				if (!$ex && $_POST['sape_widget']) $s_w['sidebar-1'][] = 'imoney-links';
-				wp_set_sidebars_widgets( $s_w );
-
-			}
+//			if ((isset($_POST['sape_widget'])) || (isset($_POST['itex_m_sape_visual_widget'])))
+//			{
+//				$s_w = wp_get_sidebars_widgets();
+//				$ex = 0;
+//				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//				{
+//					if ($v == 'imoney-links')
+//					{
+//						$ex = 1;
+//						if (!$_POST['sape_widget']) unset($s_w['sidebar-1'][$k]);
+//					}
+//				}
+//				if (!$ex && $_POST['sape_widget']) $s_w['sidebar-1'][] = 'imoney-links';
+//				wp_set_sidebars_widgets( $s_w );
+//
+//			}
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		if (isset($_POST['sape_sapedir_create']))
@@ -1617,22 +1863,6 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
 
 						echo "<br/>\n";
-						$ws = wp_get_sidebars_widgets();
-						echo "<select name='sape_widget' id='sape_widget'>\n";
-						echo "<option value='0'";
-						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
-
-						echo "<option value='1'";
-						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
-						echo ">".__('Active','iMoney')."</option>\n";
-
-						echo "</select>\n";
-
-						
-						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
-						
-						echo "<br/>\n";
 						echo "<select name='sape_pages_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
 
@@ -1652,7 +1882,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					
 					
 				</tr>
-				<?php 
+				<?php
 				?>
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
@@ -1701,7 +1931,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php"><img src="http://www.sape.ru/images/banners/sape_001.gif" border="0" /></a>
+						<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php"><img src="http://img.sape.ru/bn/sape_001.gif" alt="www.sape.ru!" border="0" /></a>
 					</td>
 				</tr>
 			</table>
@@ -1782,18 +2012,18 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				if (isset($_POST['adsense_b'.$block.'_pos']) && !empty($_POST['adsense_b'.$block.'_pos']))
 				{
 					update_option('itex_m_adsense_b'.$block.'_pos', trim($_POST['adsense_b'.$block.'_pos']));
-					$s_w = wp_get_sidebars_widgets();
-					$ex = 0;
-					if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-					{
-						if ($v == 'imoney_adsense_'.$block)
-						{
-							$ex = 1;
-							if ($_POST['adsense_b'.$block.'_pos'] != 'sidebar') unset($s_w['sidebar-1'][$k]);
-						}
-					}
-					if (!$ex && ($_POST['adsense_b'.$block.'_pos'] == 'sidebar')) $s_w['sidebar-1'][] = 'imoney_adsense_'.$block;
-					wp_set_sidebars_widgets($s_w);
+//					$s_w = wp_get_sidebars_widgets();
+//					$ex = 0;
+//					if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//					{
+//						if ($v == 'imoney_adsense_'.$block)
+//						{
+//							$ex = 1;
+//							if ($_POST['adsense_b'.$block.'_pos'] != 'sidebar') unset($s_w['sidebar-1'][$k]);
+//						}
+//					}
+//					if (!$ex && ($_POST['adsense_b'.$block.'_pos'] == 'sidebar')) $s_w['sidebar-1'][] = 'imoney_adsense_'.$block;
+//					wp_set_sidebars_widgets($s_w);
 				}
 				if (isset($_POST['adsense_b'.$block.'_adslot']) && !empty($_POST['adsense_b'.$block.'_adslot']))
 				{
@@ -1948,18 +2178,18 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				{
 					update_option('itex_m_begun_b'.$block.'_pos', trim($_POST['begun_b'.$block.'_pos']));
 					
-					$s_w = wp_get_sidebars_widgets();
-					$ex = 0;
-					if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-					{
-						if ($v == 'imoney_begun_'.$block)
-						{
-							$ex = 1;
-							if ($_POST['begun_b'.$block.'_pos'] != 'sidebar') unset($s_w['sidebar-1'][$k]);
-						}
-					}
-					if (!$ex && ($_POST['begun_b'.$block.'_pos'] == 'sidebar')) $s_w['sidebar-1'][] = 'imoney_begun_'.$block;
-					wp_set_sidebars_widgets( $s_w );
+//					$s_w = wp_get_sidebars_widgets();
+//					$ex = 0;
+//					if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//					{
+//						if ($v == 'imoney_begun_'.$block)
+//						{
+//							$ex = 1;
+//							if ($_POST['begun_b'.$block.'_pos'] != 'sidebar') unset($s_w['sidebar-1'][$k]);
+//						}
+//					}
+//					if (!$ex && ($_POST['begun_b'.$block.'_pos'] == 'sidebar')) $s_w['sidebar-1'][] = 'imoney_begun_'.$block;
+//					wp_set_sidebars_widgets( $s_w );
 				}
 				if (isset($_POST['begun_b'.$block.'_block_id']) && !empty($_POST['begun_b'.$block.'_block_id']))
 				{
@@ -2066,7 +2296,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">
+						<a target="_blank" href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">
 							<img src="http://promo.begun.ru/my/data/banners/107_04_partner.gif" alt="Покупаем рекламу. Дорого." border="0" height="60" width="468">
 						</a>
 
@@ -2077,6 +2307,181 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			<?php
 	}
 
+	/**
+   	* Adskape section admin menu
+   	*
+   	*/
+	function itex_m_admin_adskape()
+	{
+		$maxblock = 4; //max  adskape blocks - 1
+		if (isset($_POST['info_update']))
+		{
+			//phpinfo();die();
+			if (isset($_POST['adskape_id']))
+			{
+				update_option('itex_m_adskape_id', trim($_POST['adskape_id']));
+			}
+			if (isset($_POST['adskape_enable']))
+			{
+				update_option('itex_m_adskape_enable', intval($_POST['adskape_enable']));
+			}
+			for ($block=1;$block<$maxblock;$block++)
+			{
+				if (isset($_POST['adskape_b'.$block.'_enable']))
+				{
+					update_option('itex_m_adskape_b'.$block.'_enable', trim($_POST['adskape_b'.$block.'_enable']));
+				}
+
+				if (isset($_POST['adskape_b'.$block.'_size']) && !empty($_POST['adskape_b'.$block.'_size']))
+				{
+					update_option('itex_m_adskape_b'.$block.'_size', trim($_POST['adskape_b'.$block.'_size']));
+				}
+
+				if (isset($_POST['adskape_b'.$block.'_pos']) && !empty($_POST['adskape_b'.$block.'_pos']))
+				{
+					update_option('itex_m_adskape_b'.$block.'_pos', trim($_POST['adskape_b'.$block.'_pos']));
+//					$s_w = wp_get_sidebars_widgets();
+//					$ex = 0;
+//					if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//					{
+//						if ($v == 'imoney_adskape_'.$block)
+//						{
+//							$ex = 1;
+//							if ($_POST['adskape_b'.$block.'_pos'] != 'sidebar') unset($s_w['sidebar-1'][$k]);
+//						}
+//					}
+//					if (!$ex && ($_POST['adskape_b'.$block.'_pos'] == 'sidebar')) $s_w['sidebar-1'][] = 'imoney_adskape_'.$block;
+//					wp_set_sidebars_widgets($s_w);
+				}
+				if (isset($_POST['adskape_b'.$block.'_adslot']) && !empty($_POST['adskape_b'.$block.'_adslot']))
+				{
+					update_option('itex_m_adskape_b'.$block.'_adslot', trim($_POST['adskape_b'.$block.'_adslot']));
+				}
+
+			}
+
+			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
+		}
+		?>
+		<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+				<tr>
+					<th valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Your adskape ID:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<input type='text' size='50' ";
+						echo "name='adskape_id'";
+						echo "id='adskape_id' ";
+						echo "value='".get_option('itex_m_adskape_id')."' />\n";
+						?>
+						<p style="margin: 5px 10px;"><?php echo __('Enter your Adskape site ID in this box.', 'iMoney');?></p>
+						
+						<?php
+						echo "<select name='adskape_enable' id='adskape_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_adskape_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_adskape_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+						?>
+					</td>
+				</tr>
+				<?php
+				for ($block=1;$block<$maxblock;$block++)
+				{
+					?>
+					
+					<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('adskape Block ', 'iMoney').$block.': ';?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='adskape_b".$block."_enable' id='adskape_b".$block."_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_adskape_b'.$block.'_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_adskape_b'.$block.'_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+
+
+						echo "<select name='adskape_b".$block."_size' id='adskape_b".$block."_size'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_adskape_b'.$block.'_size')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						//$size = array('728x90', '468x60', '234x60','120x600', '160x600', '120x240', '336x280', '300x250', '250x250', '200x200', '180x150', '125x125');
+						$size = array('1'=> '468×60', '2'=> '100×100', '3'=> 'RICH', '4'=> 'Topline', '5'=> '600×90', '6'=> '120×600', '7'=> '240×400',);
+						foreach ( $size as $k=>$v)
+						{
+							echo "<option value='".$k."'";
+							if(get_option('itex_m_adskape_b'.$block.'_size') == $k) echo " selected='selected'";
+							echo ">".$size[$k]."</option>\n";
+						}
+						echo "</select>\n";
+						echo '<label for="">'.__('Block size ', 'iMoney').'</label>';
+						echo "<br/>\n";
+
+						echo "<select name='adskape_b".$block."_pos' id='adskape_b".$block."_pos'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_adskape_b'.$block.'_pos')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
+						foreach ( $pos as $k)
+						{
+							echo "<option value='".$k."'";
+							if(get_option('itex_m_adskape_b'.$block.'_pos') == $k) echo " selected='selected'";
+							echo ">".$k."</option>\n";
+						}
+						echo "</select>\n";
+						echo '<label for="">'.__('Block position', 'iMoney').'</label>';
+						echo "<br/>\n";
+
+
+
+						?>
+					</td>
+					
+					
+				</tr>
+				
+					<?php
+				}
+				?>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""></label>
+					</th>
+					<td align="center">
+						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?d=1&ref=17729">
+							<img src="http://adskape.ru/Banners/pr2-1.gif" alt="www.adskape.ru!">
+						</a>
+
+					</td>
+				</tr>
+				
+			</table>
+			<?php
+	}
+	
+	
 	/**
    	* Html section admin menu
    	*
@@ -2121,18 +2526,18 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			if (isset($_POST['html_sidebar_enable']))
 			{
 				update_option('itex_m_html_sidebar_enable', $_POST['html_sidebar_enable']);
-				$s_w = wp_get_sidebars_widgets();
-				$ex = 0;
-				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-				{
-					if ($v == 'imoney_html')
-					{
-						$ex = 1;
-						if (!$_POST['html_sidebar_enable']) unset($s_w['sidebar-1'][$k]);
-					}
-				}
-				if (!$ex && ($_POST['html_sidebar_enable'])) $s_w['sidebar-1'][] = 'imoney_html';
-				wp_set_sidebars_widgets( $s_w );
+//				$s_w = wp_get_sidebars_widgets();
+//				$ex = 0;
+//				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//				{
+//					if ($v == 'imoney_html')
+//					{
+//						$ex = 1;
+//						if (!$_POST['html_sidebar_enable']) unset($s_w['sidebar-1'][$k]);
+//					}
+//				}
+//				if (!$ex && ($_POST['html_sidebar_enable'])) $s_w['sidebar-1'][] = 'imoney_html';
+//				wp_set_sidebars_widgets( $s_w );
 			}
 			wp_cache_flush();
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
@@ -2341,18 +2746,18 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			if (isset($_POST['ilinks_sidebar_enable']))
 			{
 				update_option('itex_m_ilinks_sidebar_enable', $_POST['ilinks_sidebar_enable']);
-				$s_w = wp_get_sidebars_widgets();
-				$ex = 0;
-				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-				{
-					if ($v == 'imoney_ilinks')
-					{
-						$ex = 1;
-						if (!$_POST['ilinks_sidebar_enable']) unset($s_w['sidebar-1'][$k]);
-					}
-				}
-				if (!$ex && ($_POST['ilinks_sidebar_enable'])) $s_w['sidebar-1'][] = 'imoney_ilinks';
-				wp_set_sidebars_widgets( $s_w );
+//				$s_w = wp_get_sidebars_widgets();
+//				$ex = 0;
+//				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//				{
+//					if ($v == 'imoney_ilinks')
+//					{
+//						$ex = 1;
+//						if (!$_POST['ilinks_sidebar_enable']) unset($s_w['sidebar-1'][$k]);
+//					}
+//				}
+//				if (!$ex && ($_POST['ilinks_sidebar_enable'])) $s_w['sidebar-1'][] = 'imoney_ilinks';
+//				wp_set_sidebars_widgets( $s_w );
 			}
 			wp_cache_flush();
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
@@ -2572,22 +2977,22 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				update_option('itex_m_tnx_tnxcontext_pages_enable', intval($_POST['tnx_tnxcontext_pages_enable']));
 			}
 
-			if (isset($_POST['tnx_widget']))
-			{
-				$s_w = wp_get_sidebars_widgets();
-				$ex = 0;
-				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-				{
-					if ($v == 'imoney-links')
-					{
-						$ex = 1;
-						if (!$_POST['tnx_widget']) unset($s_w['sidebar-1'][$k]);
-					}
-				}
-				if (!$ex && $_POST['tnx_widget']) $s_w['sidebar-1'][] = 'imoney-links';
-				wp_set_sidebars_widgets( $s_w );
-
-			}
+//			if (isset($_POST['tnx_widget']))
+//			{
+//				$s_w = wp_get_sidebars_widgets();
+//				$ex = 0;
+//				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//				{
+//					if ($v == 'imoney-links')
+//					{
+//						$ex = 1;
+//						if (!$_POST['tnx_widget']) unset($s_w['sidebar-1'][$k]);
+//					}
+//				}
+//				if (!$ex && $_POST['tnx_widget']) $s_w['sidebar-1'][] = 'imoney-links';
+//				wp_set_sidebars_widgets( $s_w );
+//
+//			}
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		if (isset($_POST['tnx_tnxdir_create']))
@@ -2787,20 +3192,20 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
 
-						echo "<br/>\n";
-						$ws = wp_get_sidebars_widgets();
-						echo "<select name='tnx_widget' id='tnx_widget'>\n";
-						echo "<option value='0'";
-						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
-
-						echo "<option value='1'";
-						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
-						echo ">".__('Active','iMoney')."</option>\n";
-
-						echo "</select>\n";
-
-						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
+//						echo "<br/>\n";
+//						$ws = wp_get_sidebars_widgets();
+//						echo "<select name='tnx_widget' id='tnx_widget'>\n";
+//						echo "<option value='0'";
+//						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
+//						echo ">".__("Disabled", 'iMoney')."</option>\n";
+//
+//						echo "<option value='1'";
+//						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
+//						echo ">".__('Active','iMoney')."</option>\n";
+//
+//						echo "</select>\n";
+//
+//						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
 						
 						echo "<br/>\n";
 						echo "<select name='tnx_pages_enable' id='tnx_enable'>\n";
@@ -2829,7 +3234,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309"><img border="0" alt="Sell links on every page of your site to thousands of advertisers!" src="http://us1.tnx.net/tnx_468_60.gif" width="468" height="60"></a>
+						<a target="_blank" href="http://itex.name/go.php?http://www.tnx.net/?p=119596309"><img border="0" alt="Sell links on every page of your site to thousands of advertisers!" src="http://us1.tnx.net/tnx_468_60.gif" width="468" height="60"></a>
 					</td>
 				</tr>
 			</table>
@@ -2921,22 +3326,22 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				update_option('itex_m_mainlink_pages_enable', intval($_POST['mainlink_pages_enable']));
 			}
 			
-			if (isset($_POST['mainlink_widget']))
-			{
-				$s_w = wp_get_sidebars_widgets();
-				$ex = 0;
-				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-				{
-					if ($v == 'imoney-links')
-					{
-						$ex = 1;
-						if (!$_POST['mainlink_widget']) unset($s_w['sidebar-1'][$k]);
-					}
-				}
-				if (!$ex && $_POST['mainlink_widget']) $s_w['sidebar-1'][] = 'imoney-links';
-				wp_set_sidebars_widgets( $s_w );
-
-			}
+//			if (isset($_POST['mainlink_widget']))
+//			{
+//				$s_w = wp_get_sidebars_widgets();
+//				$ex = 0;
+//				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//				{
+//					if ($v == 'imoney-links')
+//					{
+//						$ex = 1;
+//						if (!$_POST['mainlink_widget']) unset($s_w['sidebar-1'][$k]);
+//					}
+//				}
+//				if (!$ex && $_POST['mainlink_widget']) $s_w['sidebar-1'][] = 'imoney-links';
+//				wp_set_sidebars_widgets( $s_w );
+//
+//			}
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		if (isset($_POST['mainlink_mainlinkdir_create']))
@@ -3137,23 +3542,23 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
 
-						echo "<br/>\n";
-						$ws = wp_get_sidebars_widgets();
-						echo "<select name='mainlink_widget' id='mainlink_widget'>\n";
-						echo "<option value='0'";
-						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
-
-						echo "<option value='1'";
-						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
-						echo ">".__('Active','iMoney')."</option>\n";
-
-						echo "</select>\n";
-
-						
-						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
-						
-						echo "<br/>\n";
+//						echo "<br/>\n";
+//						$ws = wp_get_sidebars_widgets();
+//						echo "<select name='mainlink_widget' id='mainlink_widget'>\n";
+//						echo "<option value='0'";
+//						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
+//						echo ">".__("Disabled", 'iMoney')."</option>\n";
+//
+//						echo "<option value='1'";
+//						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
+//						echo ">".__('Active','iMoney')."</option>\n";
+//
+//						echo "</select>\n";
+//
+//						
+//						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
+//						
+//						echo "<br/>\n";
 						?>
 					</td>
 					
@@ -3166,7 +3571,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851"><img src='http://www.mainlink.ru/i/banner/earth.gif' border='0'></a>
+						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851"><img src='http://www.mainlink.ru/i/banner/partners/468x1.gif' alt="www.mainlink.ru!" border='0'></a>
 					</td>
 				</tr>
 			</table>
@@ -3260,22 +3665,22 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				update_option('itex_m_linkfeed_pages_enable', intval($_POST['linkfeed_pages_enable']));
 			}
 			
-			if (isset($_POST['linkfeed_widget']))
-			{
-				$s_w = wp_get_sidebars_widgets();
-				$ex = 0;
-				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
-				{
-					if ($v == 'imoney-links')
-					{
-						$ex = 1;
-						if (!$_POST['linkfeed_widget']) unset($s_w['sidebar-1'][$k]);
-					}
-				}
-				if (!$ex && $_POST['linkfeed_widget']) $s_w['sidebar-1'][] = 'imoney-links';
-				wp_set_sidebars_widgets( $s_w );
-
-			}
+//			if (isset($_POST['linkfeed_widget']))
+//			{
+//				$s_w = wp_get_sidebars_widgets();
+//				$ex = 0;
+//				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+//				{
+//					if ($v == 'imoney-links')
+//					{
+//						$ex = 1;
+//						if (!$_POST['linkfeed_widget']) unset($s_w['sidebar-1'][$k]);
+//					}
+//				}
+//				if (!$ex && $_POST['linkfeed_widget']) $s_w['sidebar-1'][] = 'imoney-links';
+//				wp_set_sidebars_widgets( $s_w );
+//
+//			}
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		if (isset($_POST['linkfeed_linkfeeddir_create']))
@@ -3476,23 +3881,23 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
 
-						echo "<br/>\n";
-						$ws = wp_get_sidebars_widgets();
-						echo "<select name='linkfeed_widget' id='linkfeed_widget'>\n";
-						echo "<option value='0'";
-						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".__("Disabled", 'iMoney')."</option>\n";
-
-						echo "<option value='1'";
-						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
-						echo ">".__('Active','iMoney')."</option>\n";
-
-						echo "</select>\n";
-
-						
-						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
-						
-						echo "<br/>\n";
+//						echo "<br/>\n";
+//						$ws = wp_get_sidebars_widgets();
+//						echo "<select name='linkfeed_widget' id='linkfeed_widget'>\n";
+//						echo "<option value='0'";
+//						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
+//						echo ">".__("Disabled", 'iMoney')."</option>\n";
+//
+//						echo "<option value='1'";
+//						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
+//						echo ">".__('Active','iMoney')."</option>\n";
+//
+//						echo "</select>\n";
+//
+//						
+//						echo '<label for="">'.__('Widget Active', 'iMoney').'</label>';
+//						
+//						echo "<br/>\n";
 						?>
 					</td>
 					
@@ -3505,7 +3910,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317"><img src="http://www.linkfeed.ru/banners/468x60_linkfeed.gif"></a>
+						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317"><img src="http://www.linkfeed.ru/banners/468x60_linkfeed.gif" alt="www.linkfeed.ru!"></a>
 					</td>
 				</tr>
 			</table>
@@ -3583,7 +3988,6 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	}
 	
 	
-
 }
 
 if (function_exists(add_action)) $itex_money = & new itex_money();
