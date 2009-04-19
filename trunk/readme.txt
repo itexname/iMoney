@@ -5,7 +5,7 @@ Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense, tnx, sape
 Requires at least: 2.3
 Tested up to: 2.7.1
-Stable tag: 0.18
+Stable tag: 0.19
 
 == Description ==
 en
@@ -88,8 +88,7 @@ Html - Введите ваш html код в нужные места.
 == Frequently Asked Questions ==
 -
 Ru:
-http://itex.name/faq-po-imoney-i-isape/plugins/2009/02/06/
-
+http://itex.name/plugins/faq-po-imoney-i-isape.html
 Мне нужно менять шаблон, чтоб использовать систему ссылок?
 Он специально и делался, чтобы в шаблон ничего не вставлять. 
 

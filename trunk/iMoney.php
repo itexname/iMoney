@@ -1,15 +1,15 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.18 (09-04-2009) Tamerlan Edition.
+Version: 0.19 (19-04-2009) Easter Edition.
 Plugin URI: http://itex.name/imoney
-Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?d=1&ref=17729">adskape.ru</a> and html inserts helper.
+Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a> and html inserts helper.
 Author: Itex
 Author URI: http://itex.name/
 */
 
 /*
-Copyright 2007-2008  Itex (web : http://itex.name/)
+Copyright 2007-2009  Itex (web : http://itex.name/)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.18';
+	var $version = '0.19';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -301,6 +301,7 @@ class itex_money
 			$this->sape = new SAPE_client($o);
 			
 			
+			
 			$this->itex_init_sape_links();
 			
 			
@@ -324,6 +325,7 @@ class itex_money
 				}
 				else
 				{
+					
 					$this->aftercontent .= '<div>'.$css.$this->itex_init_sape_get_links(intval(get_option('itex_sape_links_aftercontent'))).'</div>';
 				}
 			}
@@ -1105,10 +1107,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 //				}
 //				$this->itex_debug('Widget '.$k.'= '.$v);
 //				
-//			}
+//			}itex_m_widget_dynamic_control
 //		} 
 		if (function_exists('register_sidebar_widget')) register_sidebar_widget('iMoney Dynamic', array(&$this, 'itex_m_widget_dynamic'));
-		if (function_exists('register_widget_control')) register_widget_control('iMoney Dynamic', array(&$this, 'itex_m_widget_control_dynamic'), 300, 200 );
+		if (function_exists('register_widget_control')) register_widget_control('iMoney Dynamic', array(&$this, 'itex_m_widget_dynamic_control'), 300, 200 );
 					
 		if (function_exists('register_sidebar_widget')) register_sidebar_widget('iMoney Links', array(&$this, 'itex_m_widget_links'));
 		if (function_exists('register_widget_control')) register_widget_control('iMoney Links', array(&$this, 'itex_m_widget_links_control'), 300, 200 );
@@ -1126,11 +1128,14 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	{
 		extract($args, EXTR_SKIP);
 		$this->itex_debug('All possible Widgets '.var_export($this->sidebar, true));
+		$title = get_option("itex_m_widget_links_title");
+		//$title = empty($title) ? urlencode('<a href="http://itex.name" title="iMoney">iMoney</a>') :$title;
+		
 		if (count($this->sidebar))
 		{
 			foreach ($this->sidebar as $k => $v)
 			{
-				echo $before_widget.$before_title .  $after_title.
+				echo $before_widget.$before_title .  $title . $after_title.
 				'<ul><li>'.$v.'</li></ul>'.$after_widget;
 				$this->itex_debug('widget init '.$k);
 			}
@@ -1144,6 +1149,25 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	function itex_m_widget_dynamic_control()
 	{
 		echo '<p>Dynamic widget control for iMoney</p>';
+		$title = get_option("itex_m_widget_dynamic_title");
+		//$itex = array('<a href="http://itex.name/imoney" title="iMoney">iMoney</a>','<a href="http://itex.name/" title="itex">itex</a>');
+		
+//		$title_links = get_option("itex_m_widget_links_title");
+//		if ((!eregi('itex.name',$title_links)) || empty($title_links)) $itex = array('<a href="http://itex.name/imoney" title="iMoney">iMoney</a>','<a href="http://itex.name/" title="itex">itex</a>');
+//		else $itex = array('','');
+		//$title = empty($title) ? $itex[rand(0,count($itex)-1)] :$title;
+		if ($_POST['itex_m_widget_dynamic_Submit'])
+		{
+			//$title = htmlspecialchars($_POST['itex_m_widget_title']);
+			$title = stripslashes($_POST['itex_m_widget_dynamic_title']);
+			update_option("itex_m_widget_dynamic_title", $title);
+		}
+		echo '
+  			<p>
+    			<label for="itex_m_widget_dynamic">'.__('Widget Title: ', 'iMoney').'</label>
+    			<textarea name="itex_m_widget_dynamic_title" id="itex_m_widget_dynamic" rows="1" cols="20">'.$title.'</textarea>
+    			<input type="hidden" id="" name="itex_m_widget_dynamic_Submit" value="1" />
+  			</p>';
 	}
 	
 		/**
@@ -1665,7 +1689,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		{
 			if (get_option('itex_m_sape_sapeuser'))  $this->itex_m_sape_install_file();
 		}
-		if (get_option('itex_m_tnx_tnxuser'))  
+		if (get_option('itex_m_sape_sapeuser'))  
 		{
 		$file = $this->document_root . '/' . _SAPE_USER . '/sape.php'; //<< Not working in multihosting.
 		if (file_exists($file)) {}
@@ -1882,7 +1906,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					
 					
 				</tr>
-				<?php
+				<?php 
 				?>
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
@@ -2470,7 +2494,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?d=1&ref=17729">
+						<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">
 							<img src="http://adskape.ru/Banners/pr2-1.gif" alt="www.adskape.ru!">
 						</a>
 
