@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.20 (30-04-2009) Walpurgis Night Edition.
+Version: 0.21 (14-06-2009)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.19';
+	var $version = '0.21';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -306,6 +306,7 @@ class itex_money
 			$this->sape = new SAPE_client($o);
 
 			
+
 			$this->itex_init_sape_links();
 
 
@@ -876,9 +877,12 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			$mlcfg['debugmode'] = 1;
 		}
 
-		$mlcfg['is_mod_rewrite'] = 1;  //проверить че за нах
-		$mlcfg['redirect'] = 0;
-
+		//$mlcfg['is_mod_rewrite'] = 1;  //проверить че за нах
+		//$mlcfg['redirect'] = 0;
+		
+		$mlcfg['uri'] = $this->safeurl;
+		//$mlcfg['is_mod_rewrite'] = 0;
+		
 		$ml->Set_Config($mlcfg);
 
 		//		if (get_option('itex_m_mainlink_masking'))
@@ -1084,7 +1088,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		if (get_option('itex_m_global_debugenable'))
 		{
 			//echo 'is_user_logged_in'.intval(is_user_logged_in()).'_'.intval(get_option('itex_m_global_debugenable_forall'));//die();
-
+			//echo 'reqweqweqweqweqwe';//die();
 			if ((intval(is_user_logged_in())) || intval(get_option('itex_m_global_debugenable_forall')))
 			{
 				echo '<!--- iMoneyDebugLogStart'.$this->debuglog.' iMoneyDebugLogEnd --->';
@@ -1728,6 +1732,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 
 			
+
 			if (isset($_POST['sape_sapecontext_enable']) )
 			{
 				update_option('itex_m_sape_sapecontext_enable', intval($_POST['sape_sapecontext_enable']));
@@ -4363,7 +4368,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
    	*/
 	function itex_m_safe_url()
 	{
-		$vars=array('p','p2','pg','page_id', 'm', 'cat', 'tag');
+		$vars=array('p','p2','pg','page_id', 'm', 'cat', 'tag', 'paged');
 
 		$url=explode("?",strtolower($_SERVER['REQUEST_URI']));
 		if(isset($url[1]))

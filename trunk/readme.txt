@@ -5,7 +5,7 @@ Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense, tnx, sape, html, php, linkfeed, xap, mainlink, txt, begun, adskape
 Requires at least: 2.3
 Tested up to: 2.7.1
-Stable tag: 0.20
+Stable tag: 0.21
 
 == Description ==
 en
