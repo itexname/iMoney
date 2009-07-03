@@ -4,8 +4,8 @@ Donate link: http://itex.name/donation/
 Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense, tnx, sape, html, php, linkfeed, xap, mainlink, txt, begun, adskape
 Requires at least: 2.3
-Tested up to: 2.7.1
-Stable tag: 0.21
+Tested up to: 2.8
+Stable tag: 0.22
 
 == Description ==
 en
@@ -26,7 +26,7 @@ ru
 
 == Installation ==
 Requirements:
-Wordpress 2.3-2.6.3
+Wordpress 2.3-2.8
 PHP5, PHP4
 Widget compatible theme, to use the links in widgets.
 

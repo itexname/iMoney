@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.21 (14-06-2009)
+Version: 0.22 (03-07-2009)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.21';
+	var $version = '0.22';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -189,6 +189,9 @@ class itex_money
 			///ru_RU lang .mo file
 			$input = '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';
 			$input = gzuncompress(base64_decode($input));
+			include_once(ABSPATH . WPINC . '/streams.php');
+			include_once(ABSPATH . WPINC . '/gettext.php');
+			//die('2312313');
 			$inputReader = new StringReader($input);
 			$l10n[$domain] = new gettext_reader($inputReader);
 			$this->itex_debug('Used Ru language');
