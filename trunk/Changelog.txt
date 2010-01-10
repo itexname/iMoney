@@ -1,4 +1,6 @@
 Ru
+0.23
+Времмено решено с StringReader в WP2.9
 0.22
 Решена проблема с StringReader в WP2.8
 0.21
