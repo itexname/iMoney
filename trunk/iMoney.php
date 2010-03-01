@@ -1,7 +1,7 @@
 <?php
 /*
-Plugin Name: iMoney
-Version: 0.23 (10-01-2010)
+Plugin Name: iMoney spring edition
+Version: 0.24 (01-03-2010)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -9,7 +9,7 @@ Author URI: http://itex.name/
 */
 
 /*
-Copyright 2007-2009  Itex (web : http://itex.name/)
+Copyright 2007-2010  Itex (web : http://itex.name/)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ Automatic installation of a plug and the rights to the sape and tnx folder on re
 Adjustment of amount of displayed links depending on the location.
 
 Requirements:
-Wordpress 2.3-2.6.3
+Wordpress 2.3-2.9
 PHP5, maybe PHP4
 Widget compatible theme, to use the links in widgets.
 
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.23';
+	var $version = '0.24';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -118,6 +118,8 @@ class itex_money
 	var $sapecontext;
 	var $links = array();
 	var $tnx;
+	var $setlinks;
+	var $setlinkscontext;
 	//var $enable = false;
 	var $sidebar = array();
 	var $sidebar_links = '';
@@ -242,6 +244,7 @@ class itex_money
 		$this->itex_init_linkfeed();
 		$this->itex_init_adskape();
 		$this->itex_init_php();
+		$this->itex_init_setlinks();
 		//echo '_phpInit_die2';die();
 		$this->itex_m_widget_init();
 		if (strlen($this->footer)) add_action('wp_footer', array(&$this, 'itex_m_footer'));
@@ -338,7 +341,7 @@ class itex_money
 				else
 				{
 					
-					$this->aftercontent .= '<div>'.$css.$this->itex_init_sape_get_links(intval(get_option('itex_sape_links_aftercontent'))).'</div>';
+					$this->aftercontent .= '<div>'.$css.$this->itex_init_sape_get_links(intval(get_option('itex_m_sape_links_aftercontent'))).'</div>';
 				}
 			}
 			$countsidebar = get_option('itex_m_sape_links_sidebar');
@@ -408,6 +411,7 @@ class itex_money
 			{
 				break;
 			}
+			if(!preg_match("/^\<\!\-\-/", $q)) // убираем коммент, не повредит дебагу?
 			$q .= $this->sape->_links_delimiter;
 			
 			if (strlen($q)) $this->links['a_only'][] = $q;
@@ -861,6 +865,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	function itex_init_mainlink()
 	{
 		if (!get_option('itex_m_mainlink_enable')) return 0;
+		if (!get_option('itex_m_mainlink_mainlinkuser')) return 0;
 		if (!defined('SECURE_CODE')) define('SECURE_CODE', get_option('itex_m_mainlink_mainlinkuser'));
 		else $this->error .= 'SECURE_CODE '.__('already defined<br/>', 'iMoney');
 		$this->itex_debug('MAINLINK_USER = '.get_option('itex_m_mainlink_mainlinkuser'));
@@ -905,7 +910,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			//$this->itex_init_mainlink_links();
 			//if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
 			//else $url = 1;
-			//if (($url) || !get_option('itex_mainlink_pages_enable'))
+			//if (($url) || !get_option('itex_m_mainlink_pages_enable'))
 			//{
 			if (get_option('itex_m_mainlink_links_beforecontent') == '0')
 			{
@@ -913,7 +918,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 			else
 			{
-				$this->beforecontent .= '<div>'.$ml->Get_Links(intval(get_option('itex_mainlink_links_beforecontent'))).'</div>';
+				$this->beforecontent .= '<div>'.$ml->Get_Links(intval(get_option('itex_m_mainlink_links_beforecontent'))).'</div>';
 			}
 
 			if (get_option('itex_m_mainlink_links_aftercontent') == '0')
@@ -922,7 +927,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 			else
 			{
-				$this->aftercontent .= '<div>'.$ml->Get_Links(intval(get_option('itex_mainlink_links_aftercontent'))).'</div>';
+				$this->aftercontent .= '<div>'.$ml->Get_Links(intval(get_option('itex_m_mainlink_links_aftercontent'))).'</div>';
 			}
 			//}
 			$countsidebar = get_option('itex_m_mainlink_links_sidebar');
@@ -1014,7 +1019,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			//$this->itex_init_linkfeed_links();
 			//if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
 			//else $url = 1;
-			//if (($url) || !get_option('itex_linkfeed_pages_enable'))
+			//if (($url) || !get_option('itex_m_linkfeed_pages_enable'))
 			//{
 			if (get_option('itex_m_linkfeed_links_beforecontent') == '0')
 			{
@@ -1022,7 +1027,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 			else
 			{
-				$this->beforecontent .= '<div>'.$linkfeed->return_links(intval(get_option('itex_linkfeed_links_beforecontent'))).'</div>';
+				$this->beforecontent .= '<div>'.$linkfeed->return_links(intval(get_option('itex_m_linkfeed_links_beforecontent'))).'</div>';
 			}
 
 			if (get_option('itex_m_linkfeed_links_aftercontent') == '0')
@@ -1031,7 +1036,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 			else
 			{
-				$this->aftercontent .= '<div>'.$linkfeed->return_links(intval(get_option('itex_linkfeed_links_aftercontent'))).'</div>';
+				$this->aftercontent .= '<div>'.$linkfeed->return_links(intval(get_option('itex_m_linkfeed_links_aftercontent'))).'</div>';
 			}
 			//}
 			$countsidebar = get_option('itex_m_linkfeed_links_sidebar');
@@ -1079,6 +1084,135 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		return 1;
 	}
 
+	/**
+   	* setlinks init
+   	* Author Zya
+   	* 
+   	* @return  bool
+   	*/
+	function itex_init_setlinks()
+	{
+		if (!get_option('itex_m_setlinks_enable')) return 0;
+		if (!get_option('itex_m_setlinks_setlinksuser')) return 0;
+		
+		$this->itex_debug('SETLINKS_USER = '.get_option('itex_m_setlinks_setlinksuser'));
+		//FOR MASS INSTALL ONLY, REPLACE if (0) ON if (1)
+		//		if (0)
+		//		{
+		//			update_option('itex_setlinks_setlinksuser', 'abcdarfkwpkgfkhagklhskdgfhqakshgakhdgflhadh'); //setlinks uid
+		//			update_option('itex_setlinkscontext_enable', 1);
+		//			update_option('itex_setlinks_enable', 1);
+		//			update_option('itex_setlinks_links_footer', 'max');
+		//		}
+
+		$file = $this->document_root . '/setlinks_' . get_option('itex_m_setlinks_setlinksuser') . '/slclient.php'; //<< Not working in multihosting.
+		if (file_exists($file)) require_once($file);
+		else return 0;
+		
+		if (get_option('itex_m_setlinks_enable'))
+		{
+			$this->setlinks = new SLClient();
+			
+			$this->setlinks->Config->encoding = get_option('blog_charset')?get_option('blog_charset'):'UTF-8';
+			//$this->setlinks->Config->show_comment = (bool)get_option('itex_m_global_debugenable');
+			$this->setlinks->Config->show_comment = true;
+			$this->setlinks->Config->use_safe_method = (bool)get_option('itex_m_setlinks_masking');
+
+			$this->itex_init_setlinks_links();
+			
+			///check it
+			if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
+			else $url = 1;
+			if (($url) || !get_option('itex_setlinks_pages_enable'))
+			{
+				if ((bool)get_option('itex_m_setlinks_links_beforecontent'))
+				{
+					$this->beforecontent .= '<div>'.$this->itex_init_sape_get_links(intval(get_option('itex_m_setlinks_links_beforecontent'))).'</div>';
+				}
+
+				if ((bool)get_option('itex_m_setlinks_links_aftercontent'))
+				{
+					$this->aftercontent .= '<div>'.$this->itex_init_sape_get_links(intval(get_option('itex_m_setlinks_links_aftercontent'))).'</div>';
+				}
+			}
+
+			$countsidebar = get_option('itex_m_setlinks_links_sidebar');
+			$check = get_option('itex_m_global_debugenable')?'<!---check sidebar '.$countsidebar.'-->':'';
+			if ($countsidebar == 'max')
+			{
+				//$this->sidebar = '<div>'.$this->setlinks->GetLinks().'</div>';
+			}
+			elseif ($countsidebar == '0')
+			{
+				//$this->sidebar = '';
+			}
+			else
+			{
+				$this->sidebar_links .= '<div>'.$this->itex_init_sape_get_links(intval($countsidebar)).'</div>';
+			}
+			$this->sidebar_links = $check.$this->sidebar_links;
+
+			//setlinks footer
+			$countfooter = get_option('itex_m_setlinks_setlinks_footer');
+			$check = get_option('itex_m_global_debugenable')?'<!---check footer '.$countfooter.'-->':'';
+			$this->footer .= $check;
+			if ($countfooter == 'max')
+			{
+				//$this->footer = '<div>'.$this->sape->GetLinks().'</div>';
+			} elseif ($countfooter == '0') {
+				//$this->footer = '';
+			} else {
+				$this->footer .= '<div>'.$this->itex_init_sape_get_links($countfooter).'</div>';
+			}
+			$this->footer = $check.$this->footer;
+
+			if (($countsidebar == 'max') && ($countfooter == 'max'))
+			{
+				$this->footer .= $this->itex_init_sape_get_links();
+			} else {
+				if ($countsidebar == 'max')
+				{
+					$this->sidebar_links .= $this->itex_init_sape_get_links();
+				} else $this->footer .= $this->itex_init_sape_get_links();
+			}
+		}
+
+		if (get_option('itex_m_setlinks_setlinkscontext_enable'))
+		{
+			$this->setlinkscontext = new SLClient();
+			add_filter('the_content', array(&$this, 'itex_m_replace'));
+			//add_filter('the_excerpt', array(&$this, 'itex_m_replace'));
+		}
+		return 1;
+	}
+
+	/**
+   	* get setlinks links
+   	* Author Zya
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_setlinks_links()
+	{
+		$i = 1;
+
+		while ($i++)
+		{
+			$q = $this->setlinks->GetLinks(1);
+			if (empty($q) || !strlen($q))
+			{
+				break;
+			}
+			
+			if (strlen($q)) $this->links['a_only'][] = $q;
+
+			//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
+			if ($i > 30) break;
+		}
+		$this->itex_debug('setlinks links:'.var_export($this->links, true));
+		return 1;
+	}
+	
 	/**
    	* Footer output
    	*
@@ -1375,6 +1509,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<li style="display: inline;"><a href="#itex_ilinks" onclick='document.getElementById("itex_ilinks").style.display="";'>iLinks</a></li>
         			<li style="display: inline;"><a href="#itex_linkfeed" onclick='document.getElementById("itex_linkfeed").style.display="";'>Linkfeed</a></li>
         			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
+        			<li style="display: inline;"><a href="#itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></li>
         		
         		</ul>
         		<p class="submit">
@@ -1404,6 +1539,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		<div id="itex_ilinks"><?php $this->itex_m_admin_ilinks(); ?></div>
        	 		<h3><a href="#itex_linkfeed" name="itex_linkfeed" onclick='document.getElementById("itex_linkfeed").style.display="";'>Linkfeed</a></h3>
        	 		<div id="itex_linkfeed"><?php $this->itex_m_admin_linkfeed(); ?></div>
+       	 		<h3><a href="#itex_setlinks" name="itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></h3>
+       	 		<div id="itex_setlinks"><?php $this->itex_m_admin_setlinks(); ?></div>
        	 		
        	 		<?php 
        	 		if(!get_option('itex_m_global_collapse')){ ?>
@@ -1418,6 +1555,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		document.getElementById("itex_ilinks").style.display="none";
        	 		document.getElementById("itex_linkfeed").style.display="none";
        	 		document.getElementById("itex_adskape").style.display="none";
+       	 		document.getElementById("itex_setlinks").style.display="none";
        	 		document.getElementById("itex_global").style.display="none";
        	 		</script>	
        	 		<?php } ?>
@@ -2594,8 +2732,6 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			</table>
 			<?php
 	}
-
-
 
 	/**
    	* Html section admin menu
@@ -4368,6 +4504,349 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		</div>';
 		//die();
 		return 1;
+	}
+
+	
+	
+	/**
+   	* SetLinks section admin menu
+   	* Author Zya
+   	*
+   	*/
+	function itex_m_admin_setlinks()
+	{
+		if (isset($_POST['info_update']))
+		{
+			//phpinfo();die();
+			if (isset($_POST['setlinks_setlinksuser']))
+			{
+				update_option('itex_m_setlinks_setlinksuser', trim($_POST['setlinks_setlinksuser']));
+			}
+			if (isset($_POST['setlinks_enable']))
+			{
+				update_option('itex_m_setlinks_enable', intval($_POST['setlinks_enable']));
+			}
+
+			if (isset($_POST['setlinks_links_beforecontent']))
+			{
+				update_option('itex_m_setlinks_links_beforecontent', $_POST['setlinks_links_beforecontent']);
+			}
+
+			if (isset($_POST['setlinks_links_aftercontent']))
+			{
+				update_option('itex_m_setlinks_links_aftercontent', $_POST['setlinks_links_aftercontent']);
+			}
+
+			if (isset($_POST['setlinks_links_sidebar']))
+			{
+				update_option('itex_m_setlinks_links_sidebar', $_POST['setlinks_links_sidebar']);
+			}
+
+			if (isset($_POST['setlinks_links_footer']))
+			{
+				update_option('itex_m_setlinks_links_footer', $_POST['setlinks_links_footer']);
+			}
+
+			
+
+			if (isset($_POST['setlinks_setlinkscontext_enable']) )
+			{
+				update_option('itex_m_setlinks_setlinkscontext_enable', intval($_POST['setlinks_setlinkscontext_enable']));
+			}
+
+			if (isset($_POST['setlinks_setlinkscontext_pages_enable']) )
+			{
+				update_option('itex_m_setlinks_setlinkscontext_pages_enable', intval($_POST['setlinks_setlinkscontext_pages_enable']));
+			}
+
+			if (isset($_POST['setlinks_pages_enable']) )
+			{
+				update_option('itex_m_setlinks_pages_enable', intval($_POST['setlinks_pages_enable']));
+			}
+
+
+			//			if ((isset($_POST['setlinks_widget'])) || (isset($_POST['itex_m_setlinks_visual_widget'])))
+			//			{
+			//				$s_w = wp_get_sidebars_widgets();
+			//				$ex = 0;
+			//				if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+			//				{
+			//					if ($v == 'imoney-links')
+			//					{
+			//						$ex = 1;
+			//						if (!$_POST['setlinks_widget']) unset($s_w['sidebar-1'][$k]);
+			//					}
+			//				}
+			//				if (!$ex && $_POST['setlinks_widget']) $s_w['sidebar-1'][] = 'imoney-links';
+			//				wp_set_sidebars_widgets( $s_w );
+			//
+			//			}
+			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
+		}
+		
+		if (get_option('itex_m_setlinks_setlinksuser'))
+		{
+			$file = $this->document_root . '/setlinks_' . _setlinks_USER . '/slsimple.php'; //<< Not working in multihosting.
+			if (file_exists($file)) {}
+			else
+			{
+				$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/setlinks_'.get_option('itex_m_setlinks_setlinksuser').'/';
+				if (is_dir($file)) {}
+			else {?>
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				SetLinks dir not exist!
+		</div>
+
+		<?php }
+			}
+		}
+		?>
+		<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+				<tr>
+					<th valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Your SETLINKS UID:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<input type='text' size='50' ";
+						echo "name='setlinks_setlinksuser'";
+						echo "id='setlinksuser' ";
+						echo "value='".get_option('itex_m_setlinks_setlinksuser')."' />\n";
+						?>
+						<p style="margin: 5px 10px;"><?php echo __('Enter your SETLINKS UID in this box.', 'iMoney');?></p>
+					</td>
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('SETLINKS links:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='setlinks_enable' id='setlinks_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_setlinks_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+
+						echo "<select name='setlinks_links_beforecontent' id='setlinks_links_beforecontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_links_beforecontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_setlinks_links_beforecontent') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_setlinks_links_beforecontent') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_setlinks_links_beforecontent') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_setlinks_links_beforecontent') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_setlinks_links_beforecontent') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Before content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+
+						echo "<select name='setlinks_links_aftercontent' id='setlinks_links_aftercontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_links_aftercontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_setlinks_links_aftercontent') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_setlinks_links_aftercontent') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_setlinks_links_aftercontent') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_setlinks_links_aftercontent') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_setlinks_links_aftercontent') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('After content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+						echo "<select name='setlinks_links_sidebar' id='setlinks_links_sidebar'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_links_sidebar')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_setlinks_links_sidebar') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_setlinks_links_sidebar') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_setlinks_links_sidebar') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_setlinks_links_sidebar') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_setlinks_links_sidebar') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_setlinks_links_sidebar') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Sidebar links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+						echo "<select name='setlinks_links_footer' id='setlinks_links_footer'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_links_footer')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_setlinks_links_footer') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_setlinks_links_footer') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_setlinks_links_footer') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_setlinks_links_footer') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_setlinks_links_footer') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_setlinks_links_footer') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						echo "<select name='setlinks_pages_enable' id='setlinks_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_setlinks_pages_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_pages_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Show content links only on Pages and Posts.', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						?>
+					</td>
+					
+					
+				</tr>
+				<?php 
+				?>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('SETLINKS context:', 'iMoney'); ?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='setlinks_setlinkscontext_enable' id='setlinks_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_setlinks_setlinkscontext_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_setlinkscontext_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Context', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+						echo "<select name='setlinks_setlinkscontext_pages_enable' id='setlinks_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_setlinks_setlinkscontext_pages_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_setlinks_setlinkscontext_pages_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Show context only on Pages and Posts.', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						?>
+					</td>
+				</tr>
+				
+				
+				
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""></label>
+					</th>
+					<td align="center">
+						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://www.setlinks.ru/?pid=72567"><img src="http://vip.setlinks.ru/images/38.gif" alt="www.setlinks.ru!" border="0" /></a> 
+					</td>
+				</tr>
+			</table>
+			<?php
+
 	}
 
 	/**
