@@ -1656,7 +1656,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<li style="display: inline;"><a href="#itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></li>
         		
         	</ul>
-        		
+        	<p align="center">
+        		<a href="http://itex.name/plugins/faq-po-imoney-i-isape.html">FAQ по iMoney и iSape</a>
+			</p>	
 			<p align="center">
 				<?php echo __("Powered by ",'iMoney')."<a href='http://itex.name' title='iTex iMoney'>iTex iMoney</a> ".__("Version:",'iMoney').$this->version; ?>
 			</p>				
