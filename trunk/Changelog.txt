@@ -1,4 +1,10 @@
 Ru
+0.25
+Добавлен Teasernet.
+Заменены ereg на preg_match.
+Добавлено поздравление с 9 Мая.
+0.24
+Добавлен Setkinks от Zia
 0.23
 Времмено решено с StringReader в WP2.9
 0.22

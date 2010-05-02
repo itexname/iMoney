@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: iMoney spring edition
-Version: 0.24 (01-03-2010)
+Plugin Name: iMoney
+Version: 0.25 (02-05-2010)
 Plugin URI: http://itex.name/imoney
-Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, php exec and html inserts helper.
+Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>,php exec and html inserts helper.
 Author: Itex
 Author URI: http://itex.name/
 */
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.24';
+	var $version = '0.25';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -245,6 +245,7 @@ class itex_money
 		$this->itex_init_adskape();
 		$this->itex_init_php();
 		$this->itex_init_setlinks();
+		$this->itex_init_teasernet();
 		//echo '_phpInit_die2';die();
 		$this->itex_m_widget_init();
 		if (strlen($this->footer)) add_action('wp_footer', array(&$this, 'itex_m_footer'));
@@ -316,7 +317,6 @@ class itex_money
 			$this->sape = new SAPE_client($o);
 
 			
-
 			$this->itex_init_sape_links();
 
 
@@ -406,13 +406,17 @@ class itex_money
 
 		while ($i++)
 		{
-			$q = $this->sape->return_links(1);
+			$q = trim($this->sape->return_links(1));
 			if (empty($q) || !strlen($q))
 			{
 				break;
 			}
-			if(!preg_match("/^\<\!\-\-/", $q)) // убираем коммент, не повредит дебагу?
-			$q .= $this->sape->_links_delimiter;
+			
+			//убрал, тк сайт не индексируются возможно из-за этого
+			//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->sape->_links_delimiter; // убираем коммент, не повредит дебагу?
+			
+			
+			
 			
 			if (strlen($q)) $this->links['a_only'][] = $q;
 
@@ -587,7 +591,7 @@ google_ad_client = "'.get_option('itex_m_adsense_id').'"; google_ad_slot = "'.ge
 				{
 					case 'sidebar':
 						{
-							$this->sidebar['imoney_adsense_'.$block] = '<div style="clear:right;">'.$script.'</div>';
+							$this->sidebar['imoney_adsense_'.$block] = '<p>'.$script.'</p>';
 							//die('imoney_adsense_'.$block);
 							break;
 						}
@@ -614,6 +618,64 @@ google_ad_client = "'.get_option('itex_m_adsense_id').'"; google_ad_slot = "'.ge
 		return 1;
 	}
 
+	/**
+   	* Teasernet init
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_teasernet()
+	{
+		if (!get_option('itex_m_teasernet_enable')) return 0;
+
+		if (get_option('itex_m_teasernet_padid'));
+		else $this->error .= __('Teasernet Id not defined<br/>', 'iMoney');
+
+		$maxblock = 4; //max  teasernet blocks - 1
+		for ($block=1;$block<$maxblock;$block++)
+		{
+			if (get_option('itex_m_teasernet_b'.$block.'_enable'))
+			{
+				$size = get_option('itex_m_teasernet_b'.$block.'_size');
+				$size = explode('x',$size);
+
+				//$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
+				$script = '<script type="text/javascript"><!--
+teasernet_blockid = '.get_option('itex_m_teasernet_b'.$block.'_blockid').';
+teasernet_padid = '.get_option('itex_m_teasernet_padid').';
+//--></script><script type="text/javascript" src="http://associeta.com/block.js"></script>';
+				$pos = get_option('itex_m_teasernet_b'.$block.'_pos');
+				switch ($pos)
+				{
+					case 'sidebar':
+						{
+							$this->sidebar['imoney_teasernet_'.$block] = '<p>'.$script.'</p>';
+							//die('imoney_teasernet_'.$block);
+							break;
+						}
+					case 'footer':
+						{
+							$this->footer .= '<p style="float:left;">'.$script.'</p>';
+							break;
+						}
+					case 'beforecontent':
+						{
+							$this->beforecontent .= '<p style="float:left;">'.$script.'</p>';
+							break;
+						}
+					case 'aftercontent':
+						{
+							$this->aftercontent .= '<p style="float:left;">'.$script.'</p>';
+							break;
+						}
+					default: {}
+				}
+
+			}
+		}
+		return 1;
+	}
+
+	
 	/**
    	* Begun init
    	*
@@ -743,7 +805,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	{
 		//echo '_phpPhp_die';die();
 		if (!get_option('itex_m_php_enable')) return 0;
-		if (eregi('/wp-admin/',$_SERVER['PHP_SELF'])) return 0; //можно вернуться в админку и исправить косяки
+		//if (eregi('/wp-admin/',$_SERVER['PHP_SELF'])) return 0; //можно вернуться в админку и исправить косяки
+		if (preg_match('@wp-admin@i',$_SERVER['PHP_SELF'])) return 0; //можно вернуться в админку и исправить косяки
 		//echo '_php';die();
 		if (get_option('itex_m_php_sidebar_enable'))
 		{
@@ -806,7 +869,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				if (strtolower($w[0]{0}) == 'r')
 				{
 					$w[0] = substr($w[0],1,strlen($w[0]));
-					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->sidebar['iMoney_ilinks']  .= $w[1];
+					//if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->sidebar['iMoney_ilinks']  .= $w[1];
+					if (preg_match("@".$w[0]."@i",$_SERVER["REQUEST_URI"])) $this->sidebar['iMoney_ilinks']  .= $w[1];
 				}
 				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->sidebar['iMoney_ilinks']  .= $w[1];
 
@@ -821,7 +885,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				if (strtolower($w[0]{0}) == 'r')
 				{
 					$w[0] = substr($w[0],1,strlen($w[0]));
-					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->footer .= $w[1];
+					//if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->footer .= $w[1];
+					if (preg_match("@".$w[0]."@i",$_SERVER["REQUEST_URI"])) $this->footer .= $w[1];
+					
 				}
 				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->footer .= $w[1];
 			}
@@ -835,7 +901,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				if (strtolower($w[0]{0}) == 'r')
 				{
 					$w[0] = substr($w[0],1,strlen($w[0]));
-					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->beforecontent .= $w[1];
+					//if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->beforecontent .= $w[1];
+					if (preg_match("@".$w[0]."@i",$_SERVER["REQUEST_URI"])) $this->beforecontent .= $w[1];
+					
 				}
 				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->beforecontent .= $w[1];
 			}
@@ -849,7 +917,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				if (strtolower($w[0]{0}) == 'r')
 				{
 					$w[0] = substr($w[0],1,strlen($w[0]));
-					if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->aftercontent .= $w[1];
+					//if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->aftercontent .= $w[1];
+					if (preg_match("@".$w[0]."@i",$_SERVER["REQUEST_URI"])) $this->aftercontent .= $w[1];
 				}
 				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->aftercontent .= $w[1];
 			}
@@ -881,7 +950,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		else return 0;
 
 		$mlcfg=array();
-		if (eregi('1251', get_option('blog_charset'))) $mlcfg['charset'] = 'win';
+		//if (eregi('1251', get_option('blog_charset'))) $mlcfg['charset'] = 'win';
+		if (preg_match('@1251@i', get_option('blog_charset'))) $mlcfg['charset'] = 'win';
 		else $mlcfg['charset'] = 'utf';
 
 		if (get_option('itex_m_global_debugenable'))
@@ -1473,6 +1543,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		
 			<form method="post">
 			<h2><?php echo __('iMoney Options', 'iMoney');?></h2>
+			<?php if ( '09_May' == date('d_F')) $this->itex_m_admin_9_may(); ?>
+			
 			<?php
 			if (strlen($this->error))
 			{
@@ -1510,6 +1582,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<li style="display: inline;"><a href="#itex_linkfeed" onclick='document.getElementById("itex_linkfeed").style.display="";'>Linkfeed</a></li>
         			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
         			<li style="display: inline;"><a href="#itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></li>
+        			<li style="display: inline;"><a href="#itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></li>
         		
         		</ul>
         		<p class="submit">
@@ -1541,7 +1614,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		<div id="itex_linkfeed"><?php $this->itex_m_admin_linkfeed(); ?></div>
        	 		<h3><a href="#itex_setlinks" name="itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></h3>
        	 		<div id="itex_setlinks"><?php $this->itex_m_admin_setlinks(); ?></div>
-       	 		
+       	 		<h3><a href="#itex_teasernet" name="itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></h3>
+       	 		<div id="itex_teasernet"><?php $this->itex_m_admin_teasernet(); ?></div>
        	 		<?php 
        	 		if(!get_option('itex_m_global_collapse')){ ?>
        	 		<script type="text/javascript">
@@ -1556,6 +1630,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		document.getElementById("itex_linkfeed").style.display="none";
        	 		document.getElementById("itex_adskape").style.display="none";
        	 		document.getElementById("itex_setlinks").style.display="none";
+       	 		document.getElementById("itex_teasernet").style.display="none";
        	 		document.getElementById("itex_global").style.display="none";
        	 		</script>	
        	 		<?php } ?>
@@ -1577,6 +1652,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<li style="display: inline;"><a href="#itex_ilinks" onclick='document.getElementById("itex_ilinks").style.display="";'>iLinks</a></li>
         			<li style="display: inline;"><a href="#itex_linkfeed" onclick='document.getElementById("itex_linkfeed").style.display="";'>Linkfeed</a></li>
         			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
+        			<li style="display: inline;"><a href="#itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></li>
+        			<li style="display: inline;"><a href="#itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></li>
+        		
         	</ul>
         		
 			<p align="center">
@@ -1838,6 +1916,16 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			<?php
 	}
 
+	/**
+   	* 9 may section admin menu
+   	*
+   	*/
+	function itex_m_admin_9_may()
+	{
+		if ( '09_May' == date('d_F'))
+		echo '<center><h1><a href="http://itex.name/plugins/s-dnem-pobedy.html">С Праздником Победы!</a></h1><p><object width="640" height="505"><param name="movie" value="http://www.youtube-nocookie.com/v/TQrINrPzgmw&hl=ru_RU&fs=1&rel=0"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube-nocookie.com/v/TQrINrPzgmw&hl=ru_RU&fs=1&rel=0" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="640" height="505"></embed></object></p></center>';
+		
+	}
 
 	/**
    	* Sape section admin menu
@@ -2732,6 +2820,361 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			</table>
 			<?php
 	}
+
+	/**
+   	* teasernet section admin menu
+   	*
+   	*/
+	function itex_m_admin_teasernet()
+	{
+		$maxblock = 4; //max  teasernet blocks - 1
+		if (isset($_POST['info_update']))
+		{
+			//phpinfo();die();
+			if (isset($_POST['teasernet_id']))
+			{
+				update_option('itex_m_teasernet_padid', trim($_POST['teasernet_padid']));
+			}
+			if (isset($_POST['teasernet_enable']))
+			{
+				update_option('itex_m_teasernet_enable', intval($_POST['teasernet_enable']));
+			}
+			for ($block=1;$block<$maxblock;$block++)
+			{
+				if (isset($_POST['teasernet_b'.$block.'_enable']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_enable', trim($_POST['teasernet_b'.$block.'_enable']));
+				}
+
+				if (isset($_POST['teasernet_b'.$block.'_blockid']) && !empty($_POST['teasernet_b'.$block.'_blockid']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_blockid', trim($_POST['teasernet_b'.$block.'_blockid']));
+				}
+
+				if (isset($_POST['teasernet_b'.$block.'_pos']) && !empty($_POST['teasernet_b'.$block.'_pos']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_pos', trim($_POST['teasernet_b'.$block.'_pos']));
+					//					$s_w = wp_get_sidebars_widgets();
+					//					$ex = 0;
+					//					if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+					//					{
+					//						if ($v == 'imoney_teasernet_'.$block)
+					//						{
+					//							$ex = 1;
+					//							if ($_POST['teasernet_b'.$block.'_pos'] != 'sidebar') unset($s_w['sidebar-1'][$k]);
+					//						}
+					//					}
+					//					if (!$ex && ($_POST['teasernet_b'.$block.'_pos'] == 'sidebar')) $s_w['sidebar-1'][] = 'imoney_teasernet_'.$block;
+					//					wp_set_sidebars_widgets($s_w);
+				}
+				/*if (isset($_POST['teasernet_b'.$block.'_adslot']) && !empty($_POST['teasernet_b'.$block.'_adslot']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_adslot', trim($_POST['teasernet_b'.$block.'_adslot']));
+				}*/
+
+			}
+
+			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
+		}
+		?>
+		<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+				<tr>
+					<th valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Your teasernet padid:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<input type='text' size='50' ";
+						echo "name='teasernet_id'";
+						echo "id='teasernet_id' ";
+						echo "value='".get_option('itex_m_teasernet_padid')."' />\n";
+						?>
+						<p style="margin: 5px 10px;"><?php echo __('Enter your teasernet site padid in this box.', 'iMoney');?></p>
+						
+						<?php
+						echo "<select name='teasernet_enable' id='teasernet_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_teasernet_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+						?>
+					</td>
+				</tr>
+				<?php
+				for ($block=1;$block<$maxblock;$block++)
+				{
+					?>
+					
+					<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('teasernet Block ', 'iMoney').$block.': ';?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='teasernet_b".$block."_enable' id='teasernet_b".$block."_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_teasernet_b'.$block.'_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_b'.$block.'_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+
+/*
+						echo "<select name='teasernet_b".$block."_size' id='teasernet_b".$block."_size'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_b'.$block.'_size')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						//$size = array('728x90', '468x60', '234x60','120x600', '160x600', '120x240', '336x280', '300x250', '250x250', '200x200', '180x150', '125x125');
+						$size = array('1'=> '468×60', '2'=> '100×100', '3'=> 'RICH', '4'=> 'Topline', '5'=> '600×90', '6'=> '120×600', '7'=> '240×400',);
+						foreach ( $size as $k=>$v)
+						{
+							echo "<option value='".$k."'";
+							if(get_option('itex_m_teasernet_b'.$block.'_size') == $k) echo " selected='selected'";
+							echo ">".$size[$k]."</option>\n";
+						}
+						echo "</select>\n";
+						echo '<label for="">'.__('Block size ', 'iMoney').'</label>';
+						echo "<br/>\n";
+
+						echo "<select name='teasernet_b".$block."_pos' id='teasernet_b".$block."_pos'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_b'.$block.'_pos')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
+						foreach ( $pos as $k)
+						{
+							echo "<option value='".$k."'";
+							if(get_option('itex_m_teasernet_b'.$block.'_pos') == $k) echo " selected='selected'";
+							echo ">".$k."</option>\n";
+						}
+						echo "</select>\n";
+						echo '<label for="">'.__('Block position', 'iMoney').'</label>';
+						echo "<br/>\n";*/
+
+						echo "<input type='text' size='20' ";
+						echo "name='teasernet_b".$block."_blockid'";
+						echo "id='teasernet_b".$block."_blockid' ";
+						echo "value='".get_option('itex_m_teasernet_b'.$block.'_blockid')."' />\n";
+						echo '<label for="">'.__('Teasernet blockid', 'iMoney').'</label>';
+						echo "<br/>\n";
+
+
+						?>
+					</td>
+					
+					
+				</tr>
+				
+					<?php
+				}
+				?>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""></label>
+					</th>
+					<td align="center">
+						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">
+						<img src="http://pic5.teasernet.com/tz/2-468_60.gif"></a>
+						
+
+					</td>
+				</tr>
+				
+			</table>
+			<?php
+	}
+
+		/**
+   	* teasernet section admin menu
+   	*
+   	*/
+	function itex_m_admin_teasernet_old()
+	{
+		$maxblock = 4; //max  teasernet blocks - 1
+		if (isset($_POST['info_update']))
+		{
+			//phpinfo();die();
+			if (isset($_POST['teasernet_id']))
+			{
+				update_option('itex_m_teasernet_id', trim($_POST['teasernet_id']));
+			}
+			if (isset($_POST['teasernet_enable']))
+			{
+				update_option('itex_m_teasernet_enable', intval($_POST['teasernet_enable']));
+			}
+			for ($block=1;$block<$maxblock;$block++)
+			{
+				if (isset($_POST['teasernet_b'.$block.'_enable']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_enable', trim($_POST['teasernet_b'.$block.'_enable']));
+				}
+
+				if (isset($_POST['teasernet_b'.$block.'_size']) && !empty($_POST['teasernet_b'.$block.'_size']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_size', trim($_POST['teasernet_b'.$block.'_size']));
+				}
+
+				if (isset($_POST['teasernet_b'.$block.'_pos']) && !empty($_POST['teasernet_b'.$block.'_pos']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_pos', trim($_POST['teasernet_b'.$block.'_pos']));
+					//					$s_w = wp_get_sidebars_widgets();
+					//					$ex = 0;
+					//					if (count($s_w['sidebar-1'])) foreach ($s_w['sidebar-1'] as $k => $v)
+					//					{
+					//						if ($v == 'imoney_teasernet_'.$block)
+					//						{
+					//							$ex = 1;
+					//							if ($_POST['teasernet_b'.$block.'_pos'] != 'sidebar') unset($s_w['sidebar-1'][$k]);
+					//						}
+					//					}
+					//					if (!$ex && ($_POST['teasernet_b'.$block.'_pos'] == 'sidebar')) $s_w['sidebar-1'][] = 'imoney_teasernet_'.$block;
+					//					wp_set_sidebars_widgets($s_w);
+				}
+				if (isset($_POST['teasernet_b'.$block.'_adslot']) && !empty($_POST['teasernet_b'.$block.'_adslot']))
+				{
+					update_option('itex_m_teasernet_b'.$block.'_adslot', trim($_POST['teasernet_b'.$block.'_adslot']));
+				}
+
+			}
+
+			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
+		}
+		?>
+		<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+				<tr>
+					<th valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Your teasernet ID:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<input type='text' size='50' ";
+						echo "name='teasernet_id'";
+						echo "id='teasernet_id' ";
+						echo "value='".get_option('itex_m_teasernet_id')."' />\n";
+						?>
+						<p style="margin: 5px 10px;"><?php echo __('Enter your teasernet site ID in this box.', 'iMoney');?></p>
+						
+						<?php
+						echo "<select name='teasernet_enable' id='teasernet_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_teasernet_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+						?>
+					</td>
+				</tr>
+				<?php
+				for ($block=1;$block<$maxblock;$block++)
+				{
+					?>
+					
+					<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('teasernet Block ', 'iMoney').$block.': ';?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='teasernet_b".$block."_enable' id='teasernet_b".$block."_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_teasernet_b'.$block.'_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_b'.$block.'_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+
+
+						echo "<select name='teasernet_b".$block."_size' id='teasernet_b".$block."_size'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_b'.$block.'_size')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						//$size = array('728x90', '468x60', '234x60','120x600', '160x600', '120x240', '336x280', '300x250', '250x250', '200x200', '180x150', '125x125');
+						$size = array('1'=> '468×60', '2'=> '100×100', '3'=> 'RICH', '4'=> 'Topline', '5'=> '600×90', '6'=> '120×600', '7'=> '240×400',);
+						foreach ( $size as $k=>$v)
+						{
+							echo "<option value='".$k."'";
+							if(get_option('itex_m_teasernet_b'.$block.'_size') == $k) echo " selected='selected'";
+							echo ">".$size[$k]."</option>\n";
+						}
+						echo "</select>\n";
+						echo '<label for="">'.__('Block size ', 'iMoney').'</label>';
+						echo "<br/>\n";
+
+						echo "<select name='teasernet_b".$block."_pos' id='teasernet_b".$block."_pos'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_teasernet_b'.$block.'_pos')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
+						foreach ( $pos as $k)
+						{
+							echo "<option value='".$k."'";
+							if(get_option('itex_m_teasernet_b'.$block.'_pos') == $k) echo " selected='selected'";
+							echo ">".$k."</option>\n";
+						}
+						echo "</select>\n";
+						echo '<label for="">'.__('Block position', 'iMoney').'</label>';
+						echo "<br/>\n";
+
+
+
+						?>
+					</td>
+					
+					
+				</tr>
+				
+					<?php
+				}
+				?>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""></label>
+					</th>
+					<td align="center">
+						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://teasernet.ru/?owner_id=18516">
+						<img src="http://pic5.teasernet.ru/tz/2-468_60.gif"></a>
+						
+
+					</td>
+				</tr>
+				
+			</table>
+			<?php
+	}
+
 
 	/**
    	* Html section admin menu
