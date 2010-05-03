@@ -4,8 +4,8 @@ Donate link: http://itex.name/donation/
 Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense, tnx, sape, html, php, linkfeed, xap, mainlink, txt, begun, adskape
 Requires at least: 2.3
-Tested up to: 2.9
-Stable tag: 0.24
+Tested up to: 3
+Stable tag: 0.25
 
 == Description ==
 en
