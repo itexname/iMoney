@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.25 (02-05-2010)
+Version: 0.26 (20-08-2010)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>,php exec and html inserts helper.
 Author: Itex
@@ -110,12 +110,13 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.25';
+	var $version = '0.26';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
 	var $sape;
 	var $sapecontext;
+	var $sapearticles;
 	var $links = array();
 	var $tnx;
 	var $setlinks;
@@ -145,8 +146,11 @@ class itex_money
 		//add_action("widgets_init", array(&$this, 'itex_m_widget_init'));
 		add_action('admin_menu', array(&$this, 'itex_m_menu'));
 		add_action('wp_footer', array(&$this, 'itex_m_footer'));
+
+
+
 		$this->document_root = ($_SERVER['DOCUMENT_ROOT'] != str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]))?(str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"])):($_SERVER['DOCUMENT_ROOT']);
-		
+
 		if (!get_option('itex_m_install_date'))
 		{
 			update_option('itex_m_install_date',time());
@@ -182,6 +186,9 @@ class itex_money
    	*/
 	function lang_ru()
 	{
+		return ; // тк перешел на .mo файлы
+
+
 		global $l10n;
 		$locale = get_locale();
 		if ($locale == 'ru_RU')
@@ -224,7 +231,7 @@ class itex_money
 		if ( function_exists('get_num_queries') ) $this->get_num_queries = get_num_queries();
 
 		//echo $this->get_num_queries;//die();
-		
+
 
 		if (get_option('itex_m_global_masking')){
 			$this->itex_m_safe_url();
@@ -302,10 +309,11 @@ class itex_money
 
 		$o['charset'] = get_option('blog_charset')?get_option('blog_charset'):'UTF-8';
 		//$o['force_show_code'] = $this->force_show_code;
-		if (get_option('itex_m_global_debugenable'))
-		{
-			$o['force_show_code'] = 1;
-		}
+
+		//if (get_option('itex_m_global_debugenable'))
+		//{
+		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
+		//}
 		$o['multi_site'] = true;
 		//		if (get_option('itex_m_sape_masking'))
 		//		{
@@ -316,7 +324,14 @@ class itex_money
 		{
 			$this->sape = new SAPE_client($o);
 
+			//$this->itex_debug('$this->sape->_links = '.var_export( $this->sape->_links,1));
+			//$this->itex_debug('$this->sape->_links_page = '.var_export( $this->sape->_links_page,1));
+
+			//echo 'sape->_links';
+			//$this->sape->_is_our_bot = true; //сделал так, тк новые страницы не добавляются
+
 			
+
 			$this->itex_init_sape_links();
 
 
@@ -392,6 +407,211 @@ class itex_money
 			add_filter('the_content', array(&$this, 'itex_m_replace'));
 			add_filter('the_excerpt', array(&$this, 'itex_m_replace'));
 		}
+
+		if (get_option('itex_m_sape_sapearticles_enable'))
+		{
+			//подстраховываемся, если старый файл сапы
+			//if (function_exists('SAPE_articles::SAPE_articles()')) $this->sapearticles = new SAPE_articles($o);
+			if(is_callable(array('SAPE_articles', 'SAPE_articles')))
+			{
+				$this->itex_debug('Class SAPE_articles exist');
+				$this->sapearticles = new SAPE_articles($o);
+
+				//debug
+				//$this->sapearticles->_is_our_bot = 1;
+				/*$this->sapearticles->_data['index']['articles']['/info/qwe21'] = array();
+				foreach ($this->sapearticles->_data['index']['template_fields'] as $field)
+				{
+				//if (isset($this->sapearticles->_data['article'][$field]))
+				$this->sapearticles->_data['article'][$field] = $field;
+				}*/
+				/*if (($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
+				($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
+				{
+				header(200);
+				echo '<html>
+				<head>
+				<meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
+				<meta name="description" content="{description}">
+				<meta name="keywords" content="{keywords}">
+				<title>{title}</title>
+				</head>
+				<body>
+				Супер плагин для Вордпресса iTex iMoney скачать можно здесь: http://itex.name/imoney !
+				<h1>{header}</h1>
+				{body}
+				</body>
+				</html>';
+				die();
+				}
+				else */
+				$this->itex_debug('sape articles template url /itex_sape_articles_template.'._SAPE_USER.'.html');
+
+				//для прохождения модераторов
+				$isvalidurl = 0;
+				$preg = get_option('itex_m_sape_sapearticles_template_url');
+				if (strlen($preg) > 4)
+				{
+					$preg = str_ireplace('\\','\\\\',$preg);
+					$preg = str_ireplace('.','\\.',$preg);
+					$preg = str_ireplace('?','\\?',$preg);
+					$preg = str_ireplace('{date_d}','[0-9]{1,2}',$preg);
+					$preg = str_ireplace('{date_m}','[0-9]{1,2}',$preg);
+					$preg = str_ireplace('{date_y}','[0-9]{2,4}',$preg);
+					$preg = str_ireplace('{name}','([a-z0-9\_\-]+)',$preg);
+					$preg = str_ireplace('{id}','([0-9]+)',$preg);
+					$preg = '@'.$preg.'@i';
+					$this->itex_debug('sapearticles_template_url preg = '.$preg);
+
+					if (preg_match($preg,$_SERVER['REQUEST_URI']))
+					{
+						$isvalidurl = 1;
+					}
+				}
+
+				if ((!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['articles'][$this->sapearticles->_request_uri])) ||
+				(!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['images'][$this->sapearticles->_request_uri])) ||
+				($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
+				($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
+				{
+					//add_action('wp_head', array(&$this, 'itex_init_sape_articles'));
+					if (!headers_sent())
+					{
+						//header('HTTP/1.1 200 OK');
+						header(200);
+						//$this->itex_debug('header 200 sent');
+					}
+
+					/*if ($this->sapearticles->_is_our_bot)
+					{
+					echo $this->sapearticles->_return_html($this->sapearticles->_data['index']['checkCode'] . $this->sapearticles->_noindex_code);
+					die();
+
+					//возможно надо будет переделать покрасивее
+					}*/
+					/*else
+					{
+					$this->itex_debug('header already sent');
+					}*/
+
+					add_action('wp', array(&$this, 'itex_init_sape_articles'));
+					global $wp_query;
+					$this->itex_debug('wp_query'.var_export($wp_query,1));
+					//add_action('get_header', array(&$this, 'itex_init_sape_articles'));
+				}
+				elseif (($isvalidurl)||
+				($this->sapearticles->_is_our_bot))
+				{
+					if (!headers_sent())
+					{
+						//header('HTTP/1.1 200 OK');
+						header(200);
+						//$this->itex_debug('header 200 sent');
+					}
+
+					if (($this->sapearticles->_is_our_bot)) echo $this->sapearticles->_return_html($this->sapearticles->_data['index']['checkCode'] . $this->sapearticles->_noindex_code);
+					else echo $this->sapearticles->process_request();
+					die();
+
+					//возможно надо будет переделать покрасивее
+
+				}
+
+				
+			//	if (get_option('itex_m_sape_sapearticles_enable'))
+		//{
+			/*if (strpos($content, "<!-- SAPE_articles -->") !== FALSE)
+			{
+			//$content = preg_replace('/<p>\s*<!--(.*)-->\s*<\/p>/i', "<!--$1-->", $content);
+			$content = str_replace('<!-- SAPE_articles -->', SAPE_articles(), $content);
+
+			}*/
+		//	$content = $content.'<p>'.$this->sapearticles->return_announcements().'</p>';
+		//	$this->itex_debug('sapearticles worked');
+		//}
+		
+				//анонсы
+				///check it
+				if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
+				else $url = 1;
+				if (($url) || !get_option('itex_m_sape_sapearticles_pages_enable'))
+				{
+					$this->itex_debug('sapearticles announcements worked');
+					if (get_option('itex_m_sape_sapearticles_beforecontent') == '0')
+					{
+						//$this->beforecontent = '';
+					}
+					else
+					{
+						$this->beforecontent .= '<div>'.$this->sapearticles->return_announcements(intval(get_option('itex_m_sape_sapearticles_beforecontent'))).'</div>';
+					}
+
+					if (get_option('itex_m_sape_sapearticles_aftercontent') == '0')
+					{
+						//$this->aftercontent = '';
+					}
+					else
+					{
+						
+						$this->aftercontent .= '<div>'.$this->sapearticles->return_announcements(intval(get_option('itex_m_sape_sapearticles_aftercontent'))).'</div>';
+					}
+				}
+				$countsidebar = get_option('itex_m_sape_sapearticles_sidebar');
+				$check = get_option('itex_m_global_debugenable')?'<!---check sidebar '.$countsidebar.'-->':'';
+				if ($countsidebar == 'max')
+				{
+					//$this->sidebar = '<div>'.$this->sape->return_links().'</div>';
+				}
+				elseif ($countsidebar == '0')
+				{
+					//$this->sidebar = '';
+				}
+				else
+				{
+					$this->sidebar_links .= '<div>'.$this->sapearticles->return_announcements(intval($countsidebar)).'</div>';
+				}
+				$this->sidebar_links = $check.$this->sidebar_links;
+
+				$countfooter = get_option('itex_m_sape_sapearticles_footer');
+				$check = get_option('itex_m_global_debugenable')?'<!---check footer '.$countfooter.'-->':'';
+				$this->footer .= $check;
+				if ($countfooter == 'max')
+				{
+					//$this->footer = '<div>'.$this->sape->return_links().'</div>';
+				}
+				elseif ($countfooter == '0')
+				{
+					//$this->footer = '';
+				}
+				else
+				{
+					$this->footer .= '<div>'.$this->sapearticles->return_announcements($countfooter).'</div>';
+				}
+				$this->footer = $check.$this->footer;
+
+				if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $this->sapearticles->return_announcements();
+				else
+				{
+					if  ($countsidebar == 'max') $this->sidebar_links .= $this->sapearticles->return_announcements();
+					else $this->footer .= $this->sapearticles->return_announcements();
+				}
+
+				//add_action('wp_action', array(&$this, 'itex_init_sape_articles'));
+				//add_filter('the_content', array(&$this, 'itex_m_replace'));
+				//add_filter('the_excerpt', array(&$this, 'itex_m_replace'));
+
+				//global $wp_query;
+				/*$recentPosts = new WP_Query();
+
+				$this->itex_debug('wp_query'.var_export($recentPosts,1));
+				if (is_404())
+				{
+				$this->itex_debug('sapearticles 404 worked');
+				}*/
+			}
+			else $this->itex_debug('Class SAPE_articles not exist');
+
+		}
 		return 1;
 	}
 
@@ -411,17 +631,22 @@ class itex_money
 			{
 				break;
 			}
-			
+
 			//убрал, тк сайт не индексируются возможно из-за этого
 			//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->sape->_links_delimiter; // убираем коммент, не повредит дебагу?
+
+
+
 			
-			
-			
-			
-			if (strlen($q)) $this->links['a_only'][] = $q;
+			if (strlen($q)) $this->links['a_only'][] = $q.$this->sape->_links_delimiter;
 
 			//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
 			if ($i > 30) break;
+		}
+		if (!count($this->links)) // если нет размещенных ссылок, и включен debugenable добавляем чеккод
+		{
+			if (get_option('itex_m_global_debugenable'))
+			$this->links['a_only'][] = trim($this->sape->return_links());
 		}
 		$this->itex_debug('sape links:'.var_export($this->links, true));
 		return 1;
@@ -463,6 +688,165 @@ class itex_money
 			}
 		}
 		return $ret;
+	}
+
+
+	/**
+   	* get sape articles
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_sape_articles()
+	{
+		$this->itex_debug('itex_init_sape_articles worked');
+		global $wp_query;
+		global $post;
+		//global $wp_query;
+		//if ($this->_is_our_bot) {
+		///return $this->_return_html($this->_data['index']['checkCode'] . $this->_noindex_code);
+		if($wp_query->is_404  || ($this->sapearticles->_is_our_bot))
+		{
+			$wp_query = new WP_Query('');
+			$this->itex_debug('sapearticles 404 worked');
+			$post = new stdClass();
+			$post->ID= -404;
+			//$post->post_category= array('uncategorized'); //Add some categories. an array()???
+			$post->post_category= array(); //Add some categories. an array()???
+			//$post->post_content='hey here we are a real post'; //The full text of the post.
+			$post->post_content="<h1>".$this->sapearticles->_data['article']['header']."</h1>\r\n".$this->sapearticles->_data['article']['body']." ".$this->sapearticles->_data['index']['checkCode'];
+			$post->post_excerpt= $this->sapearticles->_data['article']['description'];
+
+
+
+			$post->post_status='publish'; //Set the status of the new post.
+
+			//$post->post_title= 'Fake Title'; //The title of your post.
+			$post->post_title= $this->sapearticles->_data['article']['title'];
+			$post->post_type='post'; //Sometimes you might want to post a page.
+
+
+			//делаем шаблон
+			if (($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
+			($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
+			{
+				//header(200);
+				$post->post_content="<h1>{header}</h1>\r\n{body} ".$this->sapearticles->_data['index']['checkCode'];
+				$post->post_excerpt= "{description}";
+				$post->post_title= "{title}";
+				/*echo '<html>
+				<head>
+				<meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
+				<meta name="description" content="{description}">
+				<meta name="keywords" content="{keywords}">
+				<title>{title}</title>
+				</head>
+				<body>
+				Супер плагин для Вордпресса iTex iMoney скачать можно здесь: http://itex.name/imoney !
+				<h1>{header}</h1>
+				{body}
+				</body>
+				</html>';
+				die();*/
+			}
+			else
+			{
+				//выодить кодом сапы
+				echo $this->sapearticles->process_request();die();
+				
+			}
+			$wp_query->queried_object=$post;
+			$wp_query->post=$post;
+			$wp_query->posts = array($post);
+			$wp_query->found_posts = 1;
+			$wp_query->post_count = 1;
+			$wp_query->max_num_pages = 1;
+			$wp_query->is_single = 1;
+			$wp_query->is_404 = false;
+			$wp_query->is_posts_page = 1;
+
+			$wp_query->page=false;
+			$wp_query->is_post=true;
+			$wp_query->page=false;
+
+
+
+
+			$this->itex_debug('wp_query'.var_export($wp_query,1));
+
+
+			$this->itex_debug('wp_query'.var_export($this->sapearticles->_data['article'][$field],1));
+			/*foreach ($this->sapearticles->_data['index']['template_fields'] as $field)
+			{
+			//if (isset($this->sapearticles->_data['article'][$field]))
+			$this->sapearticles->_data['article'][$field] = $field;
+			}*/
+
+			/*
+			if (!headers_sent())
+			{
+			header('HTTP/1.1 200 OK');
+			$this->itex_debug('header 200 sent');
+			}
+			else
+			{
+			$this->itex_debug('header already sent');
+			}*/
+			//$this->itex_debug('post'.var_export($post,1));
+			add_action('wp_head', array(&$this, 'itex_init_sape_articles_wp_head'));
+		}
+
+		///$this->itex_debug('wp_query'.var_export($wp_query,1));
+		//$this->itex_debug('post'.var_export($post,1));
+
+		/*if (is_404())
+		{
+
+		}*/
+	}
+
+	/**
+   	* get sape articles in wp_head()
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_sape_articles_wp_head()
+	{
+		//add_action('wp', array(&$this, 'itex_init_sape_articles'));
+		$this->sapearticles->_data['article']['title'];
+
+		//делаем шаблон
+		if (($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
+		($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
+		{
+			echo '<!-- iMoney start-->
+<meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
+<meta name="description" content="{description}">
+<meta name="keywords" content="{keywords}">
+<!-- iMoney end-->';		//header(200);
+			//$post->post_content="<h1>{header}</h1>\r\n{body} ".$this->sapearticles->_data['index']['checkCode'];
+			//$post->post_excerpt= "{description}";
+			//$post->post_title= "{title}";
+			/*echo '<html>
+			<head>
+			<meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
+			<meta name="description" content="{description}">
+			<meta name="keywords" content="{keywords}">
+			<title>{title}</title>
+			</head>
+			<body>
+			Супер плагин для Вордпресса iTex iMoney скачать можно здесь: http://itex.name/imoney !
+			<h1>{header}</h1>
+			{body}
+			</body>
+			</html>';
+			die();*/
+		}
+		else echo '<!-- iMoney start-->
+<meta http-equiv="content-type" content="text/html; charset='.$this->sapearticles->_data['article']['meta_charset'].'" >
+<meta name="description" content="'.$this->sapearticles->_data['article']['description'].'">
+<meta name="keywords" content="'.$this->sapearticles->_data['article']['keywords'].'">
+<!-- iMoney end-->';
+
 	}
 
 	/**
@@ -675,7 +1059,7 @@ teasernet_padid = '.get_option('itex_m_teasernet_padid').';
 		return 1;
 	}
 
-	
+
 	/**
    	* Begun init
    	*
@@ -849,7 +1233,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		}
 	}
 
-	
+
 	/**
    	* iLinks init
    	*
@@ -887,7 +1271,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					$w[0] = substr($w[0],1,strlen($w[0]));
 					//if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->footer .= $w[1];
 					if (preg_match("@".$w[0]."@i",$_SERVER["REQUEST_URI"])) $this->footer .= $w[1];
-					
+
 				}
 				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->footer .= $w[1];
 			}
@@ -903,7 +1287,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					$w[0] = substr($w[0],1,strlen($w[0]));
 					//if (eregi($w[0],$_SERVER["REQUEST_URI"])) $this->beforecontent .= $w[1];
 					if (preg_match("@".$w[0]."@i",$_SERVER["REQUEST_URI"])) $this->beforecontent .= $w[1];
-					
+
 				}
 				elseif  ($_SERVER["REQUEST_URI"] == $w[0]) $this->beforecontent .= $w[1];
 			}
@@ -961,10 +1345,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 		//$mlcfg['is_mod_rewrite'] = 1;  //проверить че за нах
 		//$mlcfg['redirect'] = 0;
-		
+
 		$mlcfg['uri'] = $this->safeurl;
 		//$mlcfg['is_mod_rewrite'] = 0;
-		
+
 		$ml->Set_Config($mlcfg);
 
 		//		if (get_option('itex_m_mainlink_masking'))
@@ -1164,7 +1548,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	{
 		if (!get_option('itex_m_setlinks_enable')) return 0;
 		if (!get_option('itex_m_setlinks_setlinksuser')) return 0;
-		
+
 		$this->itex_debug('SETLINKS_USER = '.get_option('itex_m_setlinks_setlinksuser'));
 		//FOR MASS INSTALL ONLY, REPLACE if (0) ON if (1)
 		//		if (0)
@@ -1178,18 +1562,18 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		$file = $this->document_root . '/setlinks_' . get_option('itex_m_setlinks_setlinksuser') . '/slclient.php'; //<< Not working in multihosting.
 		if (file_exists($file)) require_once($file);
 		else return 0;
-		
+
 		if (get_option('itex_m_setlinks_enable'))
 		{
 			$this->setlinks = new SLClient();
-			
+
 			$this->setlinks->Config->encoding = get_option('blog_charset')?get_option('blog_charset'):'UTF-8';
 			//$this->setlinks->Config->show_comment = (bool)get_option('itex_m_global_debugenable');
 			$this->setlinks->Config->show_comment = true;
 			$this->setlinks->Config->use_safe_method = (bool)get_option('itex_m_setlinks_masking');
 
 			$this->itex_init_setlinks_links();
-			
+
 			///check it
 			if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
 			else $url = 1;
@@ -1273,7 +1657,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				break;
 			}
-			
+
 			if (strlen($q)) $this->links['a_only'][] = $q;
 
 			//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
@@ -1282,7 +1666,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		$this->itex_debug('setlinks links:'.var_export($this->links, true));
 		return 1;
 	}
-	
+
 	/**
    	* Footer output
    	*
@@ -1290,11 +1674,11 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	function itex_m_footer()
 	{
 		echo $this->footer;
-//		if (get_option('itex_m_php_enable') && get_option('itex_m_php_footer_enable'))
-//		{
-//			$code = get_option('itex_m_php_footer');
-//			if (strlen($code)>1) eval($code);
-//		}
+		//		if (get_option('itex_m_php_enable') && get_option('itex_m_php_footer_enable'))
+		//		{
+		//			$code = get_option('itex_m_php_footer');
+		//			if (strlen($code)>1) eval($code);
+		//		}
 
 		if (get_option('itex_m_global_debugenable'))
 		{
@@ -1316,6 +1700,19 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
    	*/
 	function itex_m_replace($content)
 	{
+
+		//if (get_option('itex_m_sape_sapearticles_enable'))
+		//{
+			/*if (strpos($content, "<!-- SAPE_articles -->") !== FALSE)
+			{
+			//$content = preg_replace('/<p>\s*<!--(.*)-->\s*<\/p>/i', "<!--$1-->", $content);
+			$content = str_replace('<!-- SAPE_articles -->', SAPE_articles(), $content);
+
+			}*/
+	//		$content = $content.'<p>'.$this->sapearticles->return_announcements().'</p>';
+	//		$this->itex_debug('sapearticles worked');
+	//	}
+
 		//sape context
 		if (get_option('itex_m_sape_sapecontext_enable'))
 		{
@@ -1350,7 +1747,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			$this->itex_debug('links in content worked');
 		}
 		else $this->itex_debug('beforecontent and aftercontent is empty');
-		
+
 		return $content;
 	}
 
@@ -1388,7 +1785,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		//
 		//			}itex_m_widget_dynamic_control
 		//		}
-		
+
 		if (function_exists('register_sidebar_widget')) register_sidebar_widget('iMoney Dynamic', array(&$this, 'itex_m_widget_dynamic'));
 		if (function_exists('register_widget_control')) register_widget_control('iMoney Dynamic', array(&$this, 'itex_m_widget_dynamic_control'), 300, 200 );
 
@@ -1552,14 +1949,14 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
 					'.$this->error.'
 				</div>';
-				
+
 			}
 			if (isset($_POST['info_update']))
 			{
 				echo '<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
 				<a href="http://itex.name/go.php?http://itex.name/donation">'.__('Create and maintain a plugin take lot\'s of time. If you enjoy this plugin, do a Donation.', 'iMoney').'</div>';
 			}
-			
+
 			?>		
 			
 			
@@ -1926,7 +2323,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	{
 		if ( '09_May' == date('d_F'))
 		echo '<center><h1><a href="http://itex.name/plugins/s-dnem-pobedy.html">С Праздником Победы!</a></h1><p><object width="640" height="505"><param name="movie" value="http://www.youtube-nocookie.com/v/TQrINrPzgmw&hl=ru_RU&fs=1&rel=0"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube-nocookie.com/v/TQrINrPzgmw&hl=ru_RU&fs=1&rel=0" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="640" height="505"></embed></object></p></center>';
-		
+
 	}
 
 	/**
@@ -1985,6 +2382,37 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 
 
+			if (isset($_POST['sape_sapearticles_enable']) )
+			{
+				update_option('itex_m_sape_sapearticles_enable', intval($_POST['sape_sapearticles_enable']));
+			}
+			if (isset($_POST['itex_m_sape_sapearticles_template_url']) )
+			{
+				update_option('itex_m_sape_sapearticles_template_url', $_POST['itex_m_sape_sapearticles_template_url']);
+			}
+			if (isset($_POST['itex_m_sape_sapearticles_beforecontent']))
+			{
+				update_option('itex_m_sape_sapearticles_beforecontent', $_POST['itex_m_sape_sapearticles_beforecontent']);
+			}
+
+			if (isset($_POST['itex_m_sape_sapearticles_aftercontent']))
+			{
+				update_option('itex_m_sape_sapearticles_aftercontent', $_POST['itex_m_sape_sapearticles_aftercontent']);
+			}
+
+			if (isset($_POST['itex_m_sape_sapearticles_sidebar']))
+			{
+				update_option('itex_m_sape_sapearticles_sidebar', $_POST['itex_m_sape_sapearticles_sidebar']);
+			}
+
+			if (isset($_POST['itex_m_sape_sapearticles_footer']))
+			{
+				update_option('itex_m_sape_sapearticles_footer', $_POST['itex_m_sape_sapearticles_footer']);
+			}
+			if (isset($_POST['itex_m_sape_sapearticles_pages_enable']) )
+			{
+				update_option('itex_m_sape_sapearticles_pages_enable', intval($_POST['itex_m_sape_sapearticles_pages_enable']));
+			}
 			//			if ((isset($_POST['sape_widget'])) || (isset($_POST['itex_m_sape_visual_widget'])))
 			//			{
 			//				$s_w = wp_get_sidebars_widgets();
@@ -2265,6 +2693,188 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</td>
 				</tr>
 				
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><a href="http://articles.sape.ru/r.a5a429f57e.php"><?php echo __('Sape articles:', 'iMoney'); ?></a></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='itex_m_sape_sapearticles_enable' id='sape_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_sape_sapearticles_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_sapearticles_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for=""><a href="http://articles.sape.ru/r.a5a429f57e.php">'.__('Articles', 'iMoney').'</a></label>';
+
+						echo "<br/>\n";
+
+						echo "<input type='text' size='100' ";
+						echo "name='itex_m_sape_sapearticles_template_url'";
+						echo "value='".get_option('itex_m_sape_sapearticles_template_url')."' />\n";
+						echo '<label for="">'.__('Sapearticles template url', 'iMoney').'</label>';
+						echo "<br/>\n";
+
+						echo "<select name='itex_m_sape_sapearticles_beforecontent' id='itex_m_sape_sapearticles_beforecontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_sapearticles_beforecontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_sape_sapearticles_beforecontent') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_sape_sapearticles_beforecontent') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_sape_sapearticles_beforecontent') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_sape_sapearticles_beforecontent') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_sape_sapearticles_beforecontent') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Before content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+
+						echo "<select name='itex_m_sape_sapearticles_aftercontent' id='itex_m_sape_sapearticles_aftercontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_sapearticles_aftercontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_sape_sapearticles_aftercontent') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_sape_sapearticles_aftercontent') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_sape_sapearticles_aftercontent') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_sape_sapearticles_aftercontent') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_sape_sapearticles_aftercontent') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('After content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+						echo "<select name='itex_m_sape_sapearticles_sidebar' id='itex_m_sape_sapearticles_sidebar'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_sapearticles_sidebar')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_sape_sapearticles_sidebar') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_sape_sapearticles_sidebar') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_sape_sapearticles_sidebar') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_sape_sapearticles_sidebar') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_sape_sapearticles_sidebar') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_sape_sapearticles_sidebar') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Sidebar links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+						echo "<select name='itex_m_sape_sapearticles_footer' id='itex_m_sape_sapearticles_footer'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_sapearticles_footer')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='1'";
+						if(get_option('itex_m_sape_sapearticles_footer') == 1) echo " selected='selected'";
+						echo ">1</option>\n";
+
+						echo "<option value='2'";
+						if(get_option('itex_m_sape_sapearticles_footer') == 2) echo " selected='selected'";
+						echo ">2</option>\n";
+
+						echo "<option value='3'";
+						if(get_option('itex_m_sape_sapearticles_footer') == 3) echo " selected='selected'";
+						echo ">3</option>\n";
+
+						echo "<option value='4'";
+						if(get_option('itex_m_sape_sapearticles_footer') == 4) echo " selected='selected'";
+						echo ">4</option>\n";
+
+						echo "<option value='5'";
+						if(get_option('itex_m_sape_sapearticles_footer') == 5) echo " selected='selected'";
+						echo ">5</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_sape_sapearticles_footer') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						echo "<select name='itex_m_sape_sapearticles_pages_enable' id='sape_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_sape_sapearticles_pages_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_sape_sapearticles_pages_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Show content links only on Pages and Posts.', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+						?>
+					</td>
+				</tr>
 				
 				
 				<tr>
@@ -2871,7 +3481,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				}
 				/*if (isset($_POST['teasernet_b'.$block.'_adslot']) && !empty($_POST['teasernet_b'.$block.'_adslot']))
 				{
-					update_option('itex_m_teasernet_b'.$block.'_adslot', trim($_POST['teasernet_b'.$block.'_adslot']));
+				update_option('itex_m_teasernet_b'.$block.'_adslot', trim($_POST['teasernet_b'.$block.'_adslot']));
 				}*/
 
 			}
@@ -2935,7 +3545,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo '<label for="">'.__("Working", 'iMoney').'</label>';
 						echo "<br/>\n";
 
-/*
+						/*
 						echo "<select name='teasernet_b".$block."_size' id='teasernet_b".$block."_size'>\n";
 						echo "<option value='0'";
 						if(!get_option('itex_m_teasernet_b'.$block.'_size')) echo" selected='selected'";
@@ -2945,9 +3555,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						$size = array('1'=> '468×60', '2'=> '100×100', '3'=> 'RICH', '4'=> 'Topline', '5'=> '600×90', '6'=> '120×600', '7'=> '240×400',);
 						foreach ( $size as $k=>$v)
 						{
-							echo "<option value='".$k."'";
-							if(get_option('itex_m_teasernet_b'.$block.'_size') == $k) echo " selected='selected'";
-							echo ">".$size[$k]."</option>\n";
+						echo "<option value='".$k."'";
+						if(get_option('itex_m_teasernet_b'.$block.'_size') == $k) echo " selected='selected'";
+						echo ">".$size[$k]."</option>\n";
 						}
 						echo "</select>\n";
 						echo '<label for="">'.__('Block size ', 'iMoney').'</label>';
@@ -2961,9 +3571,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						$pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
 						foreach ( $pos as $k)
 						{
-							echo "<option value='".$k."'";
-							if(get_option('itex_m_teasernet_b'.$block.'_pos') == $k) echo " selected='selected'";
-							echo ">".$k."</option>\n";
+						echo "<option value='".$k."'";
+						if(get_option('itex_m_teasernet_b'.$block.'_pos') == $k) echo " selected='selected'";
+						echo ">".$k."</option>\n";
 						}
 						echo "</select>\n";
 						echo '<label for="">'.__('Block position', 'iMoney').'</label>';
@@ -3003,7 +3613,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			<?php
 	}
 
-		/**
+	/**
    	* teasernet section admin menu
    	*
    	*/
@@ -3408,8 +4018,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				update_option('itex_m_php_footer', $_POST['php_footer']);
 				//print_r(get_option('itex_m_php_footer'));
 				if (!$this->itex_m_admin_php_syntax(stripslashes(get_option('itex_m_php_footer'))))
-					echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_footer wrong syntax!</div>';
-			
+				echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_footer wrong syntax!</div>';
+
 			}
 			if (isset($_POST['php_footer_enable']))
 			{
@@ -3419,8 +4029,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				update_option('itex_m_php_beforecontent', $_POST['php_beforecontent']);
 				if (!$this->itex_m_admin_php_syntax(stripslashes(get_option('itex_m_php_beforecontent'))))
-					echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_beforecontent wrong syntax!</div>';
-			
+				echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_beforecontent wrong syntax!</div>';
+
 			}
 			if (isset($_POST['php_beforecontent_enable']))
 			{
@@ -3430,8 +4040,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				update_option('itex_m_php_aftercontent', $_POST['php_aftercontent']);
 				if (!$this->itex_m_admin_php_syntax(stripslashes(get_option('itex_m_php_aftercontent'))))
-					echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_aftercontent wrong syntax!</div>';
-			
+				echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_aftercontent wrong syntax!</div>';
+
 			}
 			if (isset($_POST['php_aftercontent_enable']))
 			{
@@ -3442,8 +4052,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			{
 				update_option('itex_m_php_sidebar', $_POST['php_sidebar']);
 				if (!$this->itex_m_admin_php_syntax(stripslashes(get_option('itex_m_php_sidebar'))))
-					echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_sidebar wrong syntax!</div>';
-			
+				echo '<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">php_sidebar wrong syntax!</div>';
+
 			}
 			if (isset($_POST['php_sidebar_enable']))
 			{
@@ -3461,9 +4071,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				//				if (!$ex && ($_POST['php_sidebar_enable'])) $s_w['sidebar-1'][] = 'imoney_php';
 				//				wp_set_sidebars_widgets( $s_w );
 			}
-			
-			
-			
+
+
+
 			wp_cache_flush();
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
@@ -3686,7 +4296,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			return false !== $code;
 		}
 	}
-	
+
 	/**
    	* iLinks section admin menu
    	*
@@ -4951,8 +5561,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		return 1;
 	}
 
-	
-	
+
+
 	/**
    	* SetLinks section admin menu
    	* Author Zya
@@ -4992,7 +5602,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 				update_option('itex_m_setlinks_links_footer', $_POST['setlinks_links_footer']);
 			}
 
-			
+
 
 			if (isset($_POST['setlinks_setlinkscontext_enable']) )
 			{
@@ -5028,7 +5638,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			//			}
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
-		
+
 		if (get_option('itex_m_setlinks_setlinksuser'))
 		{
 			$file = $this->document_root . '/setlinks_' . _setlinks_USER . '/slsimple.php'; //<< Not working in multihosting.
