@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.26 (13-09-2010)
+Version: 0.26.1 (13-09-2010)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>,php exec and html inserts helper.
 Author: Itex
@@ -457,6 +457,7 @@ class itex_money
 					global $wp_query;
 				}
 				elseif ((!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['articles'][$this->sapearticles->_request_uri])) ||
+				($isvalidurl)||
 				(!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['images'][$this->sapearticles->_request_uri])))
 				{
 					if (!headers_sent())
@@ -467,20 +468,20 @@ class itex_money
 					echo $this->sapearticles->process_request();
 					die();
 				}
-				elseif (($isvalidurl)||
-				($this->sapearticles->_is_our_bot))
-				{
-					if (!headers_sent())
-					{
-						header(200);
-						$this->itex_debug('header 200 sent');
-					}
-					echo $this->sapearticles->process_request();
-					die();
-
-					//возможно надо будет переделать покрасивее
-
-				}
+//				elseif (($isvalidurl)||
+//				($this->sapearticles->_is_our_bot))
+//				{
+//					if (!headers_sent())
+//					{
+//						header(200);
+//						$this->itex_debug('header 200 sent');
+//					}
+//					echo $this->sapearticles->process_request();
+//					die();
+//
+//					//возможно надо будет переделать покрасивее
+//
+//				}
 
 				//анонсы
 				///check it
