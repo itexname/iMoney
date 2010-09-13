@@ -290,7 +290,7 @@ class itex_money
    	*/
 	function itex_init_sape()
 	{
-		if (!get_option('itex_m_sape_enable')) return 0;
+		//if (!get_option('itex_m_sape_enable')) return 0;
 		if (!defined('_SAPE_USER')) define('_SAPE_USER', get_option('itex_m_sape_sapeuser'));
 		else $this->error .= '_SAPE_USER '.__('already defined<br/>', 'iMoney');
 		$this->itex_debug('SAPE_USER = '.get_option('itex_m_sape_sapeuser'));
