@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.26 (20-08-2010)
+Version: 0.26 (13-09-2010)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>,php exec and html inserts helper.
 Author: Itex
@@ -417,35 +417,7 @@ class itex_money
 				$this->itex_debug('Class SAPE_articles exist');
 				$this->sapearticles = new SAPE_articles($o);
 
-				//debug
-				//$this->sapearticles->_is_our_bot = 1;
-				/*$this->sapearticles->_data['index']['articles']['/info/qwe21'] = array();
-				foreach ($this->sapearticles->_data['index']['template_fields'] as $field)
-				{
-				//if (isset($this->sapearticles->_data['article'][$field]))
-				$this->sapearticles->_data['article'][$field] = $field;
-				}*/
-				/*if (($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
-				($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
-				{
-				header(200);
-				echo '<html>
-				<head>
-				<meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
-				<meta name="description" content="{description}">
-				<meta name="keywords" content="{keywords}">
-				<title>{title}</title>
-				</head>
-				<body>
-				Супер плагин для Вордпресса iTex iMoney скачать можно здесь: http://itex.name/imoney !
-				<h1>{header}</h1>
-				{body}
-				</body>
-				</html>';
-				die();
-				}
-				else */
-				$this->itex_debug('sape articles template url /itex_sape_articles_template.'._SAPE_USER.'.html');
+				$this->itex_debug('sape articles url template /itex_sape_articles_template.'._SAPE_USER.'.html');
 
 				//для прохождения модераторов
 				$isvalidurl = 0;
@@ -469,67 +441,47 @@ class itex_money
 					}
 				}
 
-				if ((!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['articles'][$this->sapearticles->_request_uri])) ||
-				(!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['images'][$this->sapearticles->_request_uri])) ||
-				($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
-				($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
+				//генерация шаблона
+				if (preg_match('@itex_sape_articles_template\.'._SAPE_USER.'@i',$_SERVER['REQUEST_URI']))
 				{
-					//add_action('wp_head', array(&$this, 'itex_init_sape_articles'));
 					if (!headers_sent())
 					{
-						//header('HTTP/1.1 200 OK');
 						header(200);
-						//$this->itex_debug('header 200 sent');
+						$this->itex_debug('header 200 sent');
+						echo '';flush(); //чтоб не переопределили хеадер,куки для шаблона не нужны
 					}
-
-					/*if ($this->sapearticles->_is_our_bot)
-					{
-					echo $this->sapearticles->_return_html($this->sapearticles->_data['index']['checkCode'] . $this->sapearticles->_noindex_code);
-					die();
-
-					//возможно надо будет переделать покрасивее
-					}*/
-					/*else
-					{
-					$this->itex_debug('header already sent');
-					}*/
-
-					add_action('wp', array(&$this, 'itex_init_sape_articles'));
+					//phpinfo();die();
+					remove_all_actions('wp');
+					remove_all_actions('wp_head');
+					add_action('wp', array(&$this, 'itex_init_sape_articles_template'),-999);
 					global $wp_query;
-					$this->itex_debug('wp_query'.var_export($wp_query,1));
-					//add_action('get_header', array(&$this, 'itex_init_sape_articles'));
+				}
+				elseif ((!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['articles'][$this->sapearticles->_request_uri])) ||
+				(!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['images'][$this->sapearticles->_request_uri])))
+				{
+					if (!headers_sent())
+					{
+						header(200);
+						$this->itex_debug('header 200 sent');
+					}
+					echo $this->sapearticles->process_request();
+					die();
 				}
 				elseif (($isvalidurl)||
 				($this->sapearticles->_is_our_bot))
 				{
 					if (!headers_sent())
 					{
-						//header('HTTP/1.1 200 OK');
 						header(200);
-						//$this->itex_debug('header 200 sent');
+						$this->itex_debug('header 200 sent');
 					}
-
-					if (($this->sapearticles->_is_our_bot)) echo $this->sapearticles->_return_html($this->sapearticles->_data['index']['checkCode'] . $this->sapearticles->_noindex_code);
-					else echo $this->sapearticles->process_request();
+					echo $this->sapearticles->process_request();
 					die();
 
 					//возможно надо будет переделать покрасивее
 
 				}
 
-				
-			//	if (get_option('itex_m_sape_sapearticles_enable'))
-		//{
-			/*if (strpos($content, "<!-- SAPE_articles -->") !== FALSE)
-			{
-			//$content = preg_replace('/<p>\s*<!--(.*)-->\s*<\/p>/i', "<!--$1-->", $content);
-			$content = str_replace('<!-- SAPE_articles -->', SAPE_articles(), $content);
-
-			}*/
-		//	$content = $content.'<p>'.$this->sapearticles->return_announcements().'</p>';
-		//	$this->itex_debug('sapearticles worked');
-		//}
-		
 				//анонсы
 				///check it
 				if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
@@ -552,7 +504,7 @@ class itex_money
 					}
 					else
 					{
-						
+
 						$this->aftercontent .= '<div>'.$this->sapearticles->return_announcements(intval(get_option('itex_m_sape_sapearticles_aftercontent'))).'</div>';
 					}
 				}
@@ -596,18 +548,6 @@ class itex_money
 					else $this->footer .= $this->sapearticles->return_announcements();
 				}
 
-				//add_action('wp_action', array(&$this, 'itex_init_sape_articles'));
-				//add_filter('the_content', array(&$this, 'itex_m_replace'));
-				//add_filter('the_excerpt', array(&$this, 'itex_m_replace'));
-
-				//global $wp_query;
-				/*$recentPosts = new WP_Query();
-
-				$this->itex_debug('wp_query'.var_export($recentPosts,1));
-				if (is_404())
-				{
-				$this->itex_debug('sapearticles 404 worked');
-				}*/
 			}
 			else $this->itex_debug('Class SAPE_articles not exist');
 
@@ -696,112 +636,47 @@ class itex_money
    	*
    	* @return  bool
    	*/
-	function itex_init_sape_articles()
+	function itex_init_sape_articles_template()
 	{
-		$this->itex_debug('itex_init_sape_articles worked');
+		$this->itex_debug('itex_init_sape_articles_template worked');
+		
 		global $wp_query;
 		global $post;
-		//global $wp_query;
-		//if ($this->_is_our_bot) {
-		///return $this->_return_html($this->_data['index']['checkCode'] . $this->_noindex_code);
-		if($wp_query->is_404  || ($this->sapearticles->_is_our_bot))
+		$wp_query = new WP_Query('');
+		$this->itex_debug('sapearticles template worked');
+		$post = new stdClass();
+		$post->ID= -404;
+		$post->post_category= array(); //Add some categories. an array()???
+		$post->post_status='publish';
+		$post->post_type='post'; //page.
+		$post->post_content="<h1>{header}</h1>\r\n{body} ".$this->sapearticles->_data['index']['checkCode'];
+		$post->post_excerpt= "{description}";
+		$post->post_title= "{title}";
+		$post->post_author = 1;
+		$wp_query->queried_object=$post;
+		$wp_query->post=$post;
+		$wp_query->posts = array($post);
+		$wp_query->found_posts = 1;
+		$wp_query->post_count = 1;
+		$wp_query->max_num_pages = 1;
+		$wp_query->is_single = 1;
+		$wp_query->is_404 = false;
+		$wp_query->is_posts_page = 1;
+
+		$wp_query->page=false;
+		$wp_query->is_post=true;
+
+		remove_all_actions('wp_head');
+		remove_all_actions('get_header'); remove_all_actions('template_redirect'); //для плагинов с редиректом
+		
+		add_action('wp_head', array(&$this, 'itex_init_sape_articles_wp_head'),-999);
+		if (!headers_sent())
 		{
-			$wp_query = new WP_Query('');
-			$this->itex_debug('sapearticles 404 worked');
-			$post = new stdClass();
-			$post->ID= -404;
-			//$post->post_category= array('uncategorized'); //Add some categories. an array()???
-			$post->post_category= array(); //Add some categories. an array()???
-			//$post->post_content='hey here we are a real post'; //The full text of the post.
-			$post->post_content="<h1>".$this->sapearticles->_data['article']['header']."</h1>\r\n".$this->sapearticles->_data['article']['body']." ".$this->sapearticles->_data['index']['checkCode'];
-			$post->post_excerpt= $this->sapearticles->_data['article']['description'];
-
-
-
-			$post->post_status='publish'; //Set the status of the new post.
-
-			//$post->post_title= 'Fake Title'; //The title of your post.
-			$post->post_title= $this->sapearticles->_data['article']['title'];
-			$post->post_type='post'; //Sometimes you might want to post a page.
-
-
-			//делаем шаблон
-			if (($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
-			($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
-			{
-				//header(200);
-				$post->post_content="<h1>{header}</h1>\r\n{body} ".$this->sapearticles->_data['index']['checkCode'];
-				$post->post_excerpt= "{description}";
-				$post->post_title= "{title}";
-				/*echo '<html>
-				<head>
-				<meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
-				<meta name="description" content="{description}">
-				<meta name="keywords" content="{keywords}">
-				<title>{title}</title>
-				</head>
-				<body>
-				Супер плагин для Вордпресса iTex iMoney скачать можно здесь: http://itex.name/imoney !
-				<h1>{header}</h1>
-				{body}
-				</body>
-				</html>';
-				die();*/
-			}
-			else
-			{
-				//выодить кодом сапы
-				echo $this->sapearticles->process_request();die();
-				
-			}
-			$wp_query->queried_object=$post;
-			$wp_query->post=$post;
-			$wp_query->posts = array($post);
-			$wp_query->found_posts = 1;
-			$wp_query->post_count = 1;
-			$wp_query->max_num_pages = 1;
-			$wp_query->is_single = 1;
-			$wp_query->is_404 = false;
-			$wp_query->is_posts_page = 1;
-
-			$wp_query->page=false;
-			$wp_query->is_post=true;
-			$wp_query->page=false;
-
-
-
-
-			$this->itex_debug('wp_query'.var_export($wp_query,1));
-
-
-			$this->itex_debug('wp_query'.var_export($this->sapearticles->_data['article'][$field],1));
-			/*foreach ($this->sapearticles->_data['index']['template_fields'] as $field)
-			{
-			//if (isset($this->sapearticles->_data['article'][$field]))
-			$this->sapearticles->_data['article'][$field] = $field;
-			}*/
-
-			/*
-			if (!headers_sent())
-			{
-			header('HTTP/1.1 200 OK');
+			header(200);
 			$this->itex_debug('header 200 sent');
-			}
-			else
-			{
-			$this->itex_debug('header already sent');
-			}*/
-			//$this->itex_debug('post'.var_export($post,1));
-			add_action('wp_head', array(&$this, 'itex_init_sape_articles_wp_head'));
+			echo '';flush(); //чтоб не переопределили хеадер,куки для шаблона не нужны
 		}
-
-		///$this->itex_debug('wp_query'.var_export($wp_query,1));
-		//$this->itex_debug('post'.var_export($post,1));
-
-		/*if (is_404())
-		{
-
-		}*/
+		
 	}
 
 	/**
@@ -811,42 +686,16 @@ class itex_money
    	*/
 	function itex_init_sape_articles_wp_head()
 	{
-		//add_action('wp', array(&$this, 'itex_init_sape_articles'));
-		$this->sapearticles->_data['article']['title'];
-
-		//делаем шаблон
-		if (($_SERVER['REQUEST_URI'] == '/itex_sape_articles_template.'._SAPE_USER.'.html') ||
-		($_SERVER['REQUEST_URI'] == '/?itex_sape_articles_template.'._SAPE_USER.'.html'))
-		{
-			echo '<!-- iMoney start-->
+		
+		echo '<!-- iMoney start-->
 <meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
 <meta name="description" content="{description}">
 <meta name="keywords" content="{keywords}">
-<!-- iMoney end-->';		//header(200);
-			//$post->post_content="<h1>{header}</h1>\r\n{body} ".$this->sapearticles->_data['index']['checkCode'];
-			//$post->post_excerpt= "{description}";
-			//$post->post_title= "{title}";
-			/*echo '<html>
-			<head>
-			<meta http-equiv="content-type" content="text/html; charset={meta_charset}" >
-			<meta name="description" content="{description}">
-			<meta name="keywords" content="{keywords}">
-			<title>{title}</title>
-			</head>
-			<body>
-			Супер плагин для Вордпресса iTex iMoney скачать можно здесь: http://itex.name/imoney !
-			<h1>{header}</h1>
-			{body}
-			</body>
-			</html>';
-			die();*/
-		}
-		else echo '<!-- iMoney start-->
-<meta http-equiv="content-type" content="text/html; charset='.$this->sapearticles->_data['article']['meta_charset'].'" >
-<meta name="description" content="'.$this->sapearticles->_data['article']['description'].'">
-<meta name="keywords" content="'.$this->sapearticles->_data['article']['keywords'].'">
 <!-- iMoney end-->';
-
+		//phpinfo();
+		//die('itex_init_sape_articles_wp_head');
+		
+		return ;
 	}
 
 	/**
@@ -1686,6 +1535,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			//echo 'reqweqweqweqweqwe';//die();
 			if ((intval(is_user_logged_in())) || intval(get_option('itex_m_global_debugenable_forall')))
 			{
+				$this->debuglog = str_ireplace('<!--','<! --',$this->debuglog);
+				$this->debuglog = str_ireplace('-->','-- >',$this->debuglog);
 				echo '<!--- iMoneyDebugLogStart'.$this->debuglog.' iMoneyDebugLogEnd --->';
 				echo '<!--- iMoneyDebugErrorsStart'.$this->error.' iMoneyDebugErrorsEnd --->';
 			}
@@ -1703,15 +1554,15 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 
 		//if (get_option('itex_m_sape_sapearticles_enable'))
 		//{
-			/*if (strpos($content, "<!-- SAPE_articles -->") !== FALSE)
-			{
-			//$content = preg_replace('/<p>\s*<!--(.*)-->\s*<\/p>/i', "<!--$1-->", $content);
-			$content = str_replace('<!-- SAPE_articles -->', SAPE_articles(), $content);
+		/*if (strpos($content, "<!-- SAPE_articles -->") !== FALSE)
+		{
+		//$content = preg_replace('/<p>\s*<!--(.*)-->\s*<\/p>/i', "<!--$1-->", $content);
+		$content = str_replace('<!-- SAPE_articles -->', SAPE_articles(), $content);
 
-			}*/
-	//		$content = $content.'<p>'.$this->sapearticles->return_announcements().'</p>';
-	//		$this->itex_debug('sapearticles worked');
-	//	}
+		}*/
+		//		$content = $content.'<p>'.$this->sapearticles->return_announcements().'</p>';
+		//		$this->itex_debug('sapearticles worked');
+		//	}
 
 		//sape context
 		if (get_option('itex_m_sape_sapecontext_enable'))
@@ -2382,9 +2233,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 			}
 
 
-			if (isset($_POST['sape_sapearticles_enable']) )
+			if (isset($_POST['itex_m_sape_sapearticles_enable']) )
 			{
-				update_option('itex_m_sape_sapearticles_enable', intval($_POST['sape_sapearticles_enable']));
+				update_option('itex_m_sape_sapearticles_enable', intval($_POST['itex_m_sape_sapearticles_enable']));
 			}
 			if (isset($_POST['itex_m_sape_sapearticles_template_url']) )
 			{
@@ -2717,8 +2568,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo "<input type='text' size='100' ";
 						echo "name='itex_m_sape_sapearticles_template_url'";
 						echo "value='".get_option('itex_m_sape_sapearticles_template_url')."' />\n";
-						echo '<label for="">'.__('Sapearticles template url', 'iMoney').'</label>';
+						echo '<label for="">'.__('Sapearticles moderation url', 'iMoney').'</label>';
 						echo "<br/>\n";
+
+
 
 						echo "<select name='itex_m_sape_sapearticles_beforecontent' id='itex_m_sape_sapearticles_beforecontent'>\n";
 
@@ -2871,6 +2724,15 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo '<label for="">'.__('Show content links only on Pages and Posts.', 'iMoney').'</label>';
 
 						echo "<br/>\n";
+
+						//если есть сапеуид, то выводим примерный урл
+						if (get_option('itex_m_sape_sapeuser'))
+						{
+							echo '<label for="">'.__('Sapearticles url template  ', 'iMoney').'</label>';
+							echo "<br/>\n";
+							echo '<label for=""><a href="/itex_sape_articles_template.'.get_option('itex_m_sape_sapeuser').'.html">/itex_sape_articles_template.'.get_option('itex_m_sape_sapeuser').'.html</a></label>';
+							echo "<br/>\n";
+						}
 
 						?>
 					</td>
@@ -5913,6 +5775,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	{
 		$vars=array('p','p2','pg','page_id', 'm', 'cat', 'tag', 'paged');
 
+		//для шаблона сеп артиклес
+		if (get_option('itex_m_sape_sapeuser')) $vars[] = 'itex_sape_articles_template.'.get_option('itex_m_sape_sapeuser').'.html';
+		if (get_option('itex_m_sape_sapeuser')) $vars[] = 'itex_sape_articles_template.'.get_option('itex_m_sape_sapeuser');
+
 		$url=explode("?",strtolower($_SERVER['REQUEST_URI']));
 		if(isset($url[1]))
 		{
@@ -5929,6 +5795,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		}
 		else $ret = '';
 		$this->safeurl = $url[0].$ret;
+
+		$this->itex_debug('safe_url '.$this->safeurl);
+
 		return 1;
 	}
 
