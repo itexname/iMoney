@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.26.1 (13-09-2010)
+Version: 0.26.2 (17-09-2010)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>,php exec and html inserts helper.
 Author: Itex
@@ -290,7 +290,8 @@ class itex_money
    	*/
 	function itex_init_sape()
 	{
-		//if (!get_option('itex_m_sape_enable')) return 0;
+		if (!get_option('itex_m_sape_enable') && !get_option('itex_m_sape_sapecontext_enable') && !get_option('itex_m_sape_sapearticles_enable')) return 0;
+		
 		if (!defined('_SAPE_USER')) define('_SAPE_USER', get_option('itex_m_sape_sapeuser'));
 		else $this->error .= '_SAPE_USER '.__('already defined<br/>', 'iMoney');
 		$this->itex_debug('SAPE_USER = '.get_option('itex_m_sape_sapeuser'));
@@ -447,6 +448,7 @@ class itex_money
 					if (!headers_sent())
 					{
 						header(200);
+						header('Content-Type: text/html; charset='.$o['charset']);
 						$this->itex_debug('header 200 sent');
 						echo '';flush(); //чтоб не переопределили хеадер,куки для шаблона не нужны
 					}
