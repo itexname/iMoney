@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: iMoney
-Version: 0.26.2 (17-09-2010)
+Plugin Name: iMoney New Year Edition
+Version: 0.27 (27-12-2010)
 Plugin URI: http://itex.name/imoney
-Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>,php exec and html inserts helper.
+Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
 Author URI: http://itex.name/
 */
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.26';
+	var $version = '0.27';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -187,28 +187,28 @@ class itex_money
 	function lang_ru()
 	{
 		return ; // тк перешел на .mo файлы
-
-
-		global $l10n;
-		$locale = get_locale();
-		if ($locale == 'ru_RU')
-		{
-			$domain = 'iMoney';
-			if (isset($l10n[$domain])) return;
-			///ru_RU lang .mo file
-			$input = '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';
-			$input = gzuncompress(base64_decode($input));
-			if (file_exists(ABSPATH . WPINC . '/streams.php') && file_exists(ABSPATH . WPINC . '/gettext.php'))
-			{
-				include_once(ABSPATH . WPINC . '/streams.php');
-				include_once(ABSPATH . WPINC . '/gettext.php');
-				//die('2312313');
-				$inputReader = new StringReader($input);
-				$l10n[$domain] = new gettext_reader($inputReader);
-			}
-			else $this->itex_debug('Erorr in Ru language');
-			$this->itex_debug('Used Ru language');
-		}
+//
+//
+//		global $l10n;
+//		$locale = get_locale();
+//		if ($locale == 'ru_RU')
+//		{
+//			$domain = 'iMoney';
+//			if (isset($l10n[$domain])) return;
+//			///ru_RU lang .mo file
+//			$input = 'eNqdWG1wXFUZPkgR2tKEhpTSpk1OUPmQbJIWSssCwSZpodDYkKSlCBpvdm82l2z27uy9aRNwpE0pqC2EqWVkmGJlRsdRcUzapB9pm/JHRQedu8PoOP7QcaaMOsMffsgw+DE+73nf3b2bbFLSndk8e877ed6P85G/VCx6VeHzVXzX4LvoaqWeA35wjTKff1yr1I3AfwIrgP8FfhZ4w3VKLQGuBJYBbwFWAdcJtsm8cx3LDwHLgYeBlcBjQh8HLgW+DVwGfBd4E/DPwFXAD4GrgUsXM966mOmbgSuAuxezP6nF7P8gEC6qIzL/OvAJ4Jsy/vdi9vsz+APVahlwHHgTcAPwHeBK4P+Aa2kezt0MvHsp87ctZf27gLcAvwa8DbgfGAX+BKiBlwSvuZ79uhVYDWwBfh7YI/ii4FuC2es5fh8Ba4AVyxjXAzGlOpax/e5lHK+E4CD+3AA8AEQK1VHhf20Zx/dHMh4X/mmZf3cZr/NPQv8IiBCpq5GcOyk+wC8A7y1jue4yjsOA4J4yjutzQn+hjPNytIzz/tMyzvM0/iwH/q6M/f9rGfv7d6F/LONry3l8cznX222C0XLW31bO8XhS+J4t53r6Tjn7f7yc6+atcq63XwnfH2X8vuC/yrkOroHRgatg+waOwzeXc/yPLWe5M8t5/tfL2b/3gXdQnAR1Bef3EeDtlI8Krs9XKrg+flzB/vy2guvqkvD/B7gRuOpGrpvHgPdRfwi+A7yV+rGS439nJcfvsUqmxyrZn+OV7OcY8CzwYiXnY3gFr2/fCs7TIWAj1nkU+A2Mf3kT22+GUw8AnwFuovWu5Hh/uJL1L0Lx3wtcIbgD2A78NvAe6lPB5auY/jDwfuDIKl7XRcFPBDesZkyvZns/W83ylwSrqjg+HVVcn24V99GzVbJvAGupjqvYv/equM4uVXHcP67ifi1fw+Pb1/B6HlzD/nWs4XgeFvoJ4NPA3wC/Qn2+lu2NruU6GVvLdff2Wtbz+7VcH38Dfo72w7XsT20157ulmvu4t5r9O1TNcsdk/AsZv13N+Xyvmtf1vuAnwldew3nWNTx+CthIfVfD+f5+De87P6/hdfyhhvfHD2R8rWas1mxnA/Aqxbq28tauPqO4RrZR3hTHhWJJfb9FsVzu82XFdUU5ofxSD3cpjkWHYl/XhPjLBGkvaFbsG8WVYkr99KUQb70g9S/tkY8rXttDMk/xpNjWyvhJfBvk9yLFedslY8rxJjnPnpK5FupzfLcr3ttyH9pHHpTf60LzbfjWKa5H+mwM0XZSD8rv9YLU9zvwjeB7l+L8rhQa9Rb1P+3Ju2WuU/HeQZ9Wxf0U/mxWXHNUD7QHUJ09EqI/Ktgo+EUlZ5Ti3mpSfOZR31MN0Lmmmlodz+pJ2vH7G9y077ippiWqaUtq5tTmmO/ssdXmuPaSrq+dOH56dsqzdXPSjfXr/HBbXKfAELd7nRQ09GQamojWb6XnoPX6dka3uCnfTvlRGcZ4qJNOqt9TzXavm7ELPDKewWTcSLueQx7L0HOesbVqsVJf93UsY1v+zFEnuRV3MrXF012poYbdVroEhYz12na8BGnAclJELkHyYKY+3ZeeMT1kpWW2z471R1WLm0xaaQSxz7biUGV72rN930klPCJiuUO+ajGyAtpKxY1hH19t6XRyMIEfvtUPV13/Nk+7vdp3Bux6va1XD7uD2k497Q5rv8/xhLlOx11ItropiyJXr1o8Tzc1GXAGErmfafrRavcMJqA4oWGk13UpV8iFtpLJOr23z9Vu2ob1PqzY8WETSpEf29pji0UrYw3YJOXtdfxYH+IopcZqoDqVMP7W6R47Zg0iFrQcko1ZNPD1XieZRIi9WNLFBJaU0emMs4eCEbd8qHCw9s7N7Vv0zm2tpTyu11thy7PBb4gwktEDg56vM3bC8cChWp2MiWxbkvIj6YrX5udzVVCaKmkNE7jFlCwWSDEwvpu+iaE3WvMr7XGH6mewmPahmM7H12wnBlEEg76LQMdncOrbe4jcTeRukO8oEs3FKyxRezmGIg19/kByTqJjenROcr6p5vNgLqYiTfkenE/TXExFmiiBc9H81NC8BkrQ69VWbhferXgQVQ8l3R4ryYUYVQ9zDFGPPhq+zfL60frUwSzUZg2pduOWcLS7e+0MItIzrJXZyXY53qCVjPIgxhuGjIwK/h2XOs3tSoVC7aRObemzUgnbU502tavvZlRnn7u3eLvVbio5jD+63QKr0dbuer5XH+Id8ufhcrBkKxcNGUXVLjvjYQ/CD7MQ9bgTT9i+lsNHRq3DKWvAic2Y3W7cKp7rcvykHdUyDG+mj7sZiq16It+CdHS1RnkiV+wytHLHV27CdFJhGK5MmQqXmExJUURVN6nv3tm5pQP7JiIfHy4+EXPm5GAtycMeCIe4U+JwdbZL30nBOG1uyh7WO8yp7qm841Icea9lTC7Lz/aM+7Qd8yPb4pFckvSSDjvtZvxIm5dw4pHmwYQX6XIx3b6jK2KOJ3BFWlFZUb2+sfHeSOPdkbsa9bp7ohvW39m4obERjJEOe4/jlebbGG3cyHzbLc+PdGWslJekeoziGLCHMJtKDKKwIl22NQCzbdvathScW1ffuERuDJGu4TR0U0U2pJNY43061mdlUA0P7OzaGtlU4CMTvXYmsiUVc+Ooj6je1OP4S3ZH2l10jR951B7e62bi3nYcE1Hd3V2gNON0Slt+X1Q39LkDdkO/nekZ9hrWNTgDFPICY6dtZWJ97WCNNM7FrJqCI9lDwVRwLvty9sVgMrgQTIevZ8GROWnBK8FUdiQ4E5wgggpeA0wQF01mnwdhKhjD7+nsvsKdLRgPzgXTwVT4Ege5SZ09kN0P5jHSBY3nSNGsK91lOIPjMLafZjRsTxtP2J+xqArehNghEKeCMzq4OCenCo4G05eVnyjBY+wHp7H4F/Adza+VKD+Av6eD88EkghGef4M8OI/RyewBDY9IfoLClj08L5Gvkxidye6D/SmOM0Yv184vl7tvYpULFc338BWYzff7FcgWrrTzsuWvuMFxqKXSQLApyiZ3zxtjY6hjKliWgPBYcBKs5wy7SewF0FBeRgOchOzr+SxPEQXKirNkUku6kddp8MGilhID04Tx4hTPXoQlsniGzLD5CxicB05mR2hlVNMnqbZOmCCdN113pl4Hr5pyJQeNqROIG6zDodEitXWawqqNI+MyPW183UfCEJSwj817+0Z1TAbj2QPBSXiis8+j50a4diewG4ySe/sxPlinOY9scCq7jzpEZ18yRkYoQ2PB2ewI/DeZm5bOPUFKiEDt/BIruGh8HDM9MkKWxgrbC7SeN6Zp1fDsXPawidRkPk7ZUbNyyFBbEuT0UrWcMuE1+d/PXnL+j2DiWyZXFB6uC2NtkqxRcsygzpSFMEkPsxHThTvxRJ0rYPXUaCZiJE17znmKDLmizW5pZGhwInvIbCtY5Ckyi20i5+ZpE5pJyrDU5hmp8DHiVCV6eZRKEEWP8CMh8rgoNAyJ1V5erujxsWDp3ONkluCsE0fNPGZoAv1rNosRk2bKVOj6RFE2HXaOqSe4ynEDm1NSLlYLlZz91CmtoMSrp7TC/PumtJ7aKxObbc0UtzYXfXNSTSxMkjK5P3zkfUph9rboCbWwhX4K0bmsFj23Fmb1U4jOFWJ6KC0wwmwz/3pbmKuXEaufcVUJb0fBpAp+mBvgbPuuOfrG0ZlmS4XQ2dC2JM9E2uxl24ZCSB3jfTS/C9HZlq8VutwRB52WtF1C0Xnzlpyl5jVsCifNwZG/x6Hz+WJzBKKnITqW2+vlbRm6c5nTWKbDlRq9/M6Uf47O2ppwtmcPmnPoAp+wmhyRc9icxdnR3G2O4hQ6kfj6N2VuA4fyd4xZPVR8aZw057VZ5BSdVuZe8CYfEMbaC9Bz0NwnjueOz+zB0qZmxuYKVc8sHnOGY7HjfApRjEITUSpSFBMlOztqRjMyx1MTcgiHjnVEoJiWe27Px8PPzJkc3yu6yE3TLSAkZK6Ab4QudmdlcSEWyEU5sXyLMzcyJR0efrbLVOHhXuDJP91lKvR6l5ni97tMFr/gc7KlHvEI6ynqdXOXMLdI89agWJsyDV0Lit9O+WfXgjXw8ZeXb879A+AyTzH5d8Csnp+dBflHQeE/BMW9nA9O8TRFp3jm//hLEEM=';
+//			$input = gzuncompress(base64_decode($input));
+//			if (file_exists(ABSPATH . WPINC . '/streams.php') && file_exists(ABSPATH . WPINC . '/gettext.php'))
+//			{
+//				include_once(ABSPATH . WPINC . '/streams.php');
+//				include_once(ABSPATH . WPINC . '/gettext.php');
+//				//die('2312313');
+//				$inputReader = new StringReader($input);
+//				$l10n[$domain] = new gettext_reader($inputReader);
+//			}
+//			else $this->itex_debug('Erorr in Ru language');
+//			$this->itex_debug('Used Ru language');
+//		}
 	}
 
 	/**
@@ -253,6 +253,8 @@ class itex_money
 		$this->itex_init_php();
 		$this->itex_init_setlinks();
 		$this->itex_init_teasernet();
+		$this->itex_init_trustlink();
+		
 		//echo '_phpInit_die2';die();
 		$this->itex_m_widget_init();
 		if (strlen($this->footer)) add_action('wp_footer', array(&$this, 'itex_m_footer'));
@@ -448,6 +450,8 @@ class itex_money
 					if (!headers_sent())
 					{
 						header(200);
+						
+						//на всякий пожарный, если сервер отдаст не ту кодировку
 						header('Content-Type: text/html; charset='.$o['charset']);
 						$this->itex_debug('header 200 sent');
 						echo '';flush(); //чтоб не переопределили хеадер,куки для шаблона не нужны
@@ -458,6 +462,7 @@ class itex_money
 					add_action('wp', array(&$this, 'itex_init_sape_articles_template'),-999);
 					global $wp_query;
 				}
+				//если есть статьи или адрес соотвествует адресу шаблона, то передаем управление коду сапы
 				elseif ((!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['articles'][$this->sapearticles->_request_uri])) ||
 				($isvalidurl)||
 				(!empty($this->sapearticles->_data['index']) and isset($this->sapearticles->_data['index']['images'][$this->sapearticles->_request_uri])))
@@ -465,6 +470,11 @@ class itex_money
 					if (!headers_sent())
 					{
 						header(200);
+						
+						//на всякий пожарный, если сервер отдаст не ту кодировку
+						//надо разобраться, тк могут побиться картинки
+						if (!isset($this->sapearticles->_data['index']['images'][$this->sapearticles->_request_uri]))
+							header('Content-Type: text/html; charset='.$o['charset']);
 						$this->itex_debug('header 200 sent');
 					}
 					echo $this->sapearticles->process_request();
@@ -795,6 +805,111 @@ class itex_money
 				else $this->footer .=$this->tnx->show_link();
 			}
 		}
+		return 1;
+	}
+
+	
+	/**
+   	* Trustlink init
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_trustlink()
+	{
+		if (!get_option('itex_m_trustlink_enable') ) return 0;
+		
+		if (!defined('TRUSTLINK_USER')) define('TRUSTLINK_USER', get_option('itex_m_trustlink_user'));
+		else $this->error .= 'TRUSTLINK_USER '.__('already defined<br/>', 'iMoney');
+		$this->itex_debug('TRUSTLINK_USER = '.get_option('itex_m_trustlink_user'));
+
+		$file = $this->document_root . DIRECTORY_SEPARATOR . TRUSTLINK_USER . DIRECTORY_SEPARATOR . 'trustlink.php'; //<< Not working in multihosting.
+		if (file_exists($file)) require_once($file);
+		else return 0;
+
+		$o['charset'] = get_option('blog_charset')?get_option('blog_charset'):'UTF-8';
+		//$o['force_show_code'] = $this->force_show_code;
+
+		//if (get_option('itex_m_global_debugenable'))
+		//{
+		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
+		//}
+		$o['multi_site'] = true;
+		//		if (get_option('itex_m_trustlink_masking'))
+		//		{
+		//			$this->itex_m_safe_url();
+		//			$o['request_uri'] = $this->safeurl;
+		//		}
+		if (get_option('itex_m_trustlink_enable'))
+		{
+			
+			$trustlink = new TrustlinkClient($o);
+
+			if (get_option('itex_m_trustlink_links_beforecontent') == '0')
+			{
+				//$this->beforecontent = '';
+			}
+			else
+			{
+				$this->beforecontent .= '<div>'.$trustlink->build_links().'</div>';
+			}
+
+			if (get_option('itex_m_trustlink_links_aftercontent') == '0')
+			{
+				//$this->aftercontent = '';
+			}
+			else
+			{
+				$this->aftercontent .= '<div>'.$trustlink->build_links().'</div>';
+			}
+			//}
+			$countsidebar = get_option('itex_m_trustlink_links_sidebar');
+			$check = get_option('itex_m_global_debugenable')?'<!---check sidebar '.$countsidebar.'-->':'';
+			if ($countsidebar == 'max')
+			{
+				//$this->sidebar = '<div>'.$this->mainlink->return_links().'</div>';
+				$this->sidebar_links .= '<div>'.$trustlink->build_links().'</div>';
+			}
+			elseif ($countsidebar == '0')
+			{
+				//$this->sidebar = '';
+			}
+			else
+			{
+				$this->sidebar_links .= '<div>'.$trustlink->build_links().'</div>';
+			}
+			$this->sidebar_links = $check.$this->sidebar_links;
+
+			$countfooter = get_option('itex_m_trustlink_links_footer');
+			$check = get_option('itex_m_global_debugenable')?'<!---check footer '.$countfooter.'-->':'';
+			$this->footer .= $check;
+			if ($countfooter == 'max')
+			{
+				//$this->footer = '<div>'.$this->mainlink->return_links().'</div>';
+				$this->footer .= '<div>'.$trustlink->build_links().'</div>';
+			}
+			elseif ($countfooter == '0')
+			{
+				//$this->footer = '';
+			}
+			else
+			{
+				$this->footer .= '<div>'.$trustlink->build_links().'</div>';
+			}
+			$this->footer = $check.$this->footer;
+
+			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $trustlink->build_links();
+			else
+			{
+				if  ($countsidebar == 'max') $this->sidebar_links .= $trustlink->build_links();
+				else $this->footer .= $trustlink->build_links();
+			}
+
+			
+		}
+
+		
+		
+		
 		return 1;
 	}
 
@@ -1794,7 +1909,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		
 			<form method="post">
 			<h2><?php echo __('iMoney Options', 'iMoney');?></h2>
-			<?php if ( '09_May' == date('d_F')) $this->itex_m_admin_9_may(); ?>
+			<?php 
+			if ( '09_May' == date('d_F')) $this->itex_m_admin_9_may(); 
+			if ( '30_December' == date('d_F') || '31_December' == date('d_F') || '01_January' == date('d_F') || '02_January' == date('d_F') || '03_January' == date('d_F')   )  $this->itex_m_admin_new_year();
+			?>
 			
 			<?php
 			if (strlen($this->error))
@@ -1834,7 +1952,9 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
         			<li style="display: inline;"><a href="#itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></li>
         			<li style="display: inline;"><a href="#itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></li>
-        		
+        			<li style="display: inline;"><a href="#itex_trustlink" onclick='document.getElementById("itex_trustlink").style.display="";'>Trustlink</a></li>
+        
+        				
         		</ul>
         		<p class="submit">
 				<input type='submit' name='info_update' value='<?php echo __('Save Changes', 'iMoney'); ?>' />
@@ -1855,6 +1975,10 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		
        	 		<h3><a href="#itex_sape" name="itex_sape" onclick='document.getElementById("itex_sape").style.display="";'>Sape</a></h3>
        	 		<div id="itex_sape"><?php $this->itex_m_admin_sape(); ?></div>
+       	 		
+       	 		<h3><a href="#itex_trustlink" name="itex_trustlink" onclick='document.getElementById("itex_trustlink").style.display="";'>Trustlink</a></h3>
+       	 		<div id="itex_trustlink"><?php $this->itex_m_admin_trustlink(); ?></div>
+       	 		
        	 		<h3><a href="#itex_tnx" name="itex_tnx" onclick='document.getElementById("itex_tnx").style.display="";'>Tnx/Xap</a></h3>
        	 		<div id="itex_tnx"><?php $this->itex_m_admin_tnx(); ?></div>
        	 		<h3><a href="#itex_mainlink" name="itex_mainlink" onclick='document.getElementById("itex_mainlink").style.display="";'>MainLink</a></h3>
@@ -1882,6 +2006,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
        	 		document.getElementById("itex_adskape").style.display="none";
        	 		document.getElementById("itex_setlinks").style.display="none";
        	 		document.getElementById("itex_teasernet").style.display="none";
+       	 		document.getElementById("itex_trustlink").style.display="none";
        	 		document.getElementById("itex_global").style.display="none";
        	 		</script>	
        	 		<?php } ?>
@@ -1905,7 +2030,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
         			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
         			<li style="display: inline;"><a href="#itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></li>
         			<li style="display: inline;"><a href="#itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></li>
-        		
+        			<li style="display: inline;"><a href="#itex_trustlink" onclick='document.getElementById("itex_trustlink").style.display="";'>Trustlink</a></li>
+        
         	</ul>
         	<p align="center">
         		<a href="http://itex.name/plugins/faq-po-imoney-i-isape.html">FAQ по iMoney и iSape</a>
@@ -2177,6 +2303,17 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 	{
 		if ( '09_May' == date('d_F'))
 		echo '<center><h1><a href="http://itex.name/plugins/s-dnem-pobedy.html">С Праздником Победы!</a></h1><p><object width="640" height="505"><param name="movie" value="http://www.youtube-nocookie.com/v/TQrINrPzgmw&hl=ru_RU&fs=1&rel=0"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube-nocookie.com/v/TQrINrPzgmw&hl=ru_RU&fs=1&rel=0" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="640" height="505"></embed></object></p></center>';
+
+	}
+	
+	/**
+   	* New Year section admin menu
+   	*
+   	*/
+	function itex_m_admin_new_year()
+	{
+		if ( '30_December' == date('d_F') || '31_December' == date('d_F') || '01_January' == date('d_F') || '02_January' == date('d_F') || '03_January' == date('d_F')   )  
+		echo '<center><h1><a href="http://itex.name/plugins/s-novym-godom.html">С Новым Годом!</a></h1><p><object width="640" height="505"><param name="movie" value="http://www.youtube-nocookie.com/v/dcLMH8pwusw&hl=ru_RU&fs=1&rel=0"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube-nocookie.com/v/dcLMH8pwusw&hl=ru_RU&fs=1&rel=0" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="640" height="505"></embed></object></p></center>';
 
 	}
 
@@ -2762,8 +2899,8 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
    	*/
 	function itex_m_sape_install_file()
 	{
-		//file sape.php from sape.ru v1.0.4 21.07.2008
-		$sape_php_content = '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';
+		//file sape.php from sape.ru (v1.0.8 02.09.2010) 27.12.2010
+		$sape_php_content = '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';
 		$sape_php_content = gzuncompress(base64_decode($sape_php_content));
 		$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/'.get_option('itex_m_sape_sapeuser').'/sape.php';
 
@@ -2791,6 +2928,271 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 		echo '
 		<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
 				'.__('Sapedir and sape.php created!', 'iMoney').'
+		</div>';
+		//die();
+		return 1;
+	}
+
+	/**
+   	* Trustlink section admin menu
+   	*
+   	*/
+	function itex_m_admin_trustlink()
+	{
+		if (isset($_POST['info_update']))
+		{
+			//phpinfo();die();
+			if (isset($_POST['itex_m_trustlink_user']))
+			{
+				update_option('itex_m_trustlink_user', trim($_POST['itex_m_trustlink_user']));
+			}
+			if (isset($_POST['itex_m_trustlink_enable']))
+			{
+				update_option('itex_m_trustlink_enable', intval($_POST['itex_m_trustlink_enable']));
+			}
+
+			if (isset($_POST['itex_m_trustlink_links_beforecontent']))
+			{
+				update_option('itex_m_trustlink_links_beforecontent', $_POST['itex_m_trustlink_links_beforecontent']);
+			}
+
+			if (isset($_POST['itex_m_trustlink_links_aftercontent']))
+			{
+				update_option('itex_m_trustlink_links_aftercontent', $_POST['itex_m_trustlink_links_aftercontent']);
+			}
+
+			if (isset($_POST['itex_m_trustlink_links_sidebar']))
+			{
+				update_option('itex_m_trustlink_links_sidebar', $_POST['itex_m_trustlink_links_sidebar']);
+			}
+
+			if (isset($_POST['itex_m_trustlink_links_footer']))
+			{
+				update_option('itex_m_trustlink_links_footer', $_POST['itex_m_trustlink_links_footer']);
+			}
+			if (isset($_POST['itex_m_trustlink_pages_enable']) )
+			{
+				update_option('itex_m_trustlink_pages_enable', intval($_POST['itex_m_trustlink_pages_enable']));
+			}
+
+			
+			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
+		}
+		if (isset($_POST['itex_m_trustlink_dir_create']))
+		{
+			if (get_option('itex_m_trustlink_user'))  $this->itex_m_trustlink_install_file();
+		}
+		if (get_option('itex_m_trustlink_user'))
+		{
+			$file = $this->document_root . '/' . get_option('itex_m_trustlink_user') . '/trustlink.php'; //<< Not working in multihosting.
+			if (file_exists($file)) {}
+			else
+			{
+				$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/'.get_option('itex_m_trustlink_user').'/trustlink.php';
+				if (file_exists($file)) {}
+			else {?>
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				Trustlink <?php echo __('dir not exist!', 'iMoney');?> 
+		</div>
+		<div style="margin:10px auto; border:3px #f00 solid; padding:10px; text-align:center;">
+				<?php echo __('Create new dir and', 'iMoney');?> trustlink.php? (<?php echo $file;?>)
+				<p class="submit">
+				<input type='submit' name='itex_m_trustlink_dir_create' value='<?php echo __('Create', 'iMoney'); ?>' />
+				</p>
+				<?php
+				if (!get_option('itex_m_trustlink_sapeuser')) echo __('Enter your Trustlink UID in this box!', 'iMoney');
+				?>
+		</div>
+		
+		<?php }
+			}
+		}
+		?>
+		<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+				<tr>
+					<th valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Your Trustlink UID:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<input type='text' size='50' ";
+						echo "name='itex_m_trustlink_user'";
+						echo "id='user' ";
+						echo "value='".get_option('itex_m_trustlink_user')."' />\n";
+						?>
+						<p style="margin: 5px 10px;"><?php echo __('Enter your Trustlink UID in this box.', 'iMoney');?></p>
+					</td>
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo __('Trustlink links:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<select name='itex_m_trustlink_enable' id='itex_m_trustlink_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_trustlink_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_trustlink_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__("Working", 'iMoney').'</label>';
+						echo "<br/>\n";
+
+						echo "<select name='itex_m_trustlink_links_beforecontent' id='itex_m_trustlink_links_beforecontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_trustlink_links_beforecontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_trustlink_links_sidebar') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Before content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+
+						echo "<select name='itex_m_trustlink_links_aftercontent' id='itex_m_trustlink_links_aftercontent'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_trustlink_links_aftercontent')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_trustlink_links_sidebar') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('After content links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+						echo "<select name='itex_m_trustlink_links_sidebar' id='itex_m_trustlink_links_sidebar'>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_trustlink_links_sidebar')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_trustlink_links_sidebar') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Sidebar links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+
+
+						echo "<select name='itex_m_trustlink_links_footer' id='itex_m_trustlink_links_footer'>\n";
+						echo "<option value='0'";
+						if(!get_option('itex_m_trustlink_links_footer')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+
+						echo "<option value='max'";
+						if(get_option('itex_m_trustlink_links_footer') == 'max') echo " selected='selected'";
+						echo ">".__('Max', 'iMoney')."</option>\n";
+
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Footer links', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						echo "<select name='itex_m_trustlink_pages_enable' id='trustlink_enable'>\n";
+						echo "<option value='1'";
+
+						if(get_option('itex_m_trustlink_pages_enable')) echo " selected='selected'";
+						echo ">".__("Enabled", 'iMoney')."</option>\n";
+
+						echo "<option value='0'";
+						if(!get_option('itex_m_trustlink_pages_enable')) echo" selected='selected'";
+						echo ">".__("Disabled", 'iMoney')."</option>\n";
+						echo "</select>\n";
+
+						echo '<label for="">'.__('Show content links only on Pages and Posts.', 'iMoney').'</label>';
+
+						echo "<br/>\n";
+						?>
+					</td>
+					
+					
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""></label>
+					</th>
+					<td align="center">
+						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535"><img src="http://trustlink.ru/banners/secretar_600x90.swf" alt="www.trustlink.ru!" border="0" /></a>
+					</td>
+				</tr>
+			</table>
+			<?php
+	}
+
+	/**
+   	* Trustlink file installation
+   	*
+   	* @return  bool
+   	*/
+	function itex_m_trustlink_install_file()
+	{
+		//file trustlink.php from trustlink.ru vT0.4.3 26.12.2010
+		$file_php_content = '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';
+		$file_php_content = gzuncompress(base64_decode($file_php_content));
+		$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/'.get_option('itex_m_trustlink_user').'/trustlink.php';
+
+		$dir = dirname($file);
+		if (!@mkdir($dir, 0777))
+		{
+			echo '
+
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.__('Can`t create Trustlink dir!', 'iMoney').'
+		</div>';
+			return 0;
+		}
+		chmod($dir, 0777);  //byli gluki s mkdir($dir, 0777)
+		if (!file_put_contents($file,$file_php_content))
+		{
+			echo '
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.__('Can`t create', 'iMoney').'trustlink.php!
+		</div>';
+			return 0;
+		}
+		
+		
+		//file template.tpl.html from trustlink.ru 26.12.2010
+		$file_php_content = 'eNqlk9tygjAQhu99ihSvlYgHKqa8S05AxjXJkDDaMr57Q9SOOL1oh+WGZH/+/chuiPOfIMsZCtHBkstMriuc70UmtpjnAmfvdCfyDRc5xzJj+X5N15tq1TPKj3VrOi0W3IBpCzSvYqA3dbKm9VT7A2KmFTLkVvaCnAEl0Fzi+IxkZyV8U6AM46B7TlgqhNJ1gfBo+0TbWumX3eu/fwKB6kE5v4iHUCBttPy9/PaFy8uLX1BQdYAAWfmJHHbZSCr6yujAor4CympjL4eJrrR/dAaH4Hwq5Igvm85nkTtRgBElxpNN2ZPhbofxAUXus1R144cmt6FqsCbpffZJB4gDde4j+XOdJHzWMzD8eL1dHgLq9hIX9mE49DUpSRgzHZQktc+iksQDCOlhnob0ff0qY0HSGBclrEQ/eZIOVUmfPkhI2kE5+wZPOSsu';
+		$file_php_content = gzuncompress(base64_decode($file_php_content));
+		
+		$file = $dir.DIRECTORY_SEPARATOR.'template.tpl.html';
+		if (!file_put_contents($file,$file_php_content))
+		{
+			echo '
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.__('Can`t create', 'iMoney').'template.tpl.html !
+		</div>';
+			return 0;
+		}
+		
+		
+		//chmod($file, 0777);
+		file_put_contents($dir.'/.htaccess',"deny from all\r\n");
+		echo '
+		<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
+				'.__('Trustlink dir and trustlink.php created!', 'iMoney').'
 		</div>';
 		//die();
 		return 1;
