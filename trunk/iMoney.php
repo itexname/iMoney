@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney New Year Edition
-Version: 0.27 (27-12-2010)
+Version: 0.27.1 (28-12-2010)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -110,7 +110,7 @@ Html - Введите ваш html код в нужные места.
 */
 class itex_money
 {
-	var $version = '0.27';
+	var $version = '0.27.1';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -584,6 +584,12 @@ class itex_money
 			{
 				break;
 			}
+			
+			$q1 = trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет
+			if (empty($q1) || !strlen($q1))
+			{
+				break;
+			}
 
 			//убрал, тк сайт не индексируются возможно из-за этого
 			//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->sape->_links_delimiter; // убираем коммент, не повредит дебагу?
@@ -873,10 +879,10 @@ class itex_money
 			{
 				//$this->sidebar = '';
 			}
-			else
-			{
-				$this->sidebar_links .= '<div>'.$trustlink->build_links().'</div>';
-			}
+//			else
+//			{
+//				$this->sidebar_links .= '<div>'.$trustlink->build_links().'</div>';
+//			}
 			$this->sidebar_links = $check.$this->sidebar_links;
 
 			$countfooter = get_option('itex_m_trustlink_links_footer');
@@ -897,12 +903,12 @@ class itex_money
 			}
 			$this->footer = $check.$this->footer;
 
-			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $trustlink->build_links();
-			else
-			{
-				if  ($countsidebar == 'max') $this->sidebar_links .= $trustlink->build_links();
-				else $this->footer .= $trustlink->build_links();
-			}
+//			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $trustlink->build_links();
+//			else
+//			{
+//				if  ($countsidebar == 'max') $this->sidebar_links .= $trustlink->build_links();
+//				else $this->footer .= $trustlink->build_links();
+//			}
 
 			
 		}
@@ -3050,7 +3056,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo ">".__("Disabled", 'iMoney')."</option>\n";
 
 						echo "<option value='max'";
-						if(get_option('itex_m_trustlink_links_sidebar') == 'max') echo " selected='selected'";
+						if(get_option('itex_m_trustlink_links_beforecontent') == 'max') echo " selected='selected'";
 						echo ">".__('Max', 'iMoney')."</option>\n";
 
 						echo "</select>\n";
@@ -3068,7 +3074,7 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 						echo ">".__("Disabled", 'iMoney')."</option>\n";
 
 						echo "<option value='max'";
-						if(get_option('itex_m_trustlink_links_sidebar') == 'max') echo " selected='selected'";
+						if(get_option('itex_m_trustlink_links_aftercontent') == 'max') echo " selected='selected'";
 						echo ">".__('Max', 'iMoney')."</option>\n";
 
 						echo "</select>\n";
@@ -3133,11 +3139,15 @@ var begun_auto_pad = '.get_option('itex_m_begun_id').';var begun_block_id = '.ge
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535"><img src="http://trustlink.ru/banners/secretar_600x90.swf" alt="www.trustlink.ru!" border="0" /></a>
+						<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://fpdownload.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0" width="600" height="90"><param name="movie" value="http://trustlink.ru/banners/secretar_600x90.swf"/><param name="bgcolor" value="#FFFFFF"/><param name="quality" value="high"><param name="allowScriptAccess" value="Always"><param name="FlashVars" value="refLink=http://itex.name/go.php?http://trustlink.ru/registration/106535"><embed type="application/x-shockwave-flash" pluginspage="http://www.adobe.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" width="600" height="90" src="http://trustlink.ru/banners/secretar_600x90.swf" bgcolor="#FFFFFF" quality="high" allowScriptAccess="Always" flashvars="refLink=http://itex.name/go.php?http://trustlink.ru/registration/106535" /></object>
+						<br/>
+						<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535">www.trustlink.ru</a>
 					</td>
 				</tr>
 			</table>
 			<?php
+			//<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535"><img src="http://trustlink.ru/banners/secretar_600x90.swf" alt="www.trustlink.ru!" border="0" /></a>
+			
 	}
 
 	/**
