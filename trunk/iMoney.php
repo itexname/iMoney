@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.28 (29-01-2011)
+Version: 0.28.1 (31-01-2011)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -126,7 +126,7 @@ Html - Введите ваш html код в нужные места.
 
 class itex_money
 {
-	var $version = '0.28';
+	var $version = '0.28.1';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -426,6 +426,74 @@ class itex_money
 		{
 			$this->sape = new SAPE_client($o);
 
+			
+
+			$this->itex_init_sape_links();
+
+			///check it
+			$url = 1;
+			if ($this->wordpress) if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
+
+			if (($url) || !$this->get_option('itex_sape_pages_enable'))
+			{
+				if ($this->get_option('itex_m_sape_links_beforecontent') == '0')
+				{
+					//$this->beforecontent = '';
+				}
+				else
+				{
+					$this->beforecontent .= '<div>'.$this->itex_init_sape_get_links(intval($this->get_option('itex_sape_links_beforecontent'))).'</div>';
+				}
+
+				if ($this->get_option('itex_m_sape_links_aftercontent') == '0')
+				{
+					//$this->aftercontent = '';
+				}
+				else
+				{
+					
+					$this->aftercontent .= '<div>'.$css.$this->itex_init_sape_get_links(intval($this->get_option('itex_m_sape_links_aftercontent'))).'</div>';
+				}
+			}
+			$countsidebar = $this->get_option('itex_m_sape_links_sidebar');
+			$check = $this->get_option('itex_m_global_debugenable')?'<!---check sidebar '.$countsidebar.'-->':'';
+			if ($countsidebar == 'max')
+			{
+				//$this->sidebar = '<div>'.$this->sape->return_links().'</div>';
+			}
+			elseif ($countsidebar == '0')
+			{
+				//$this->sidebar = '';
+			}
+			else
+			{
+				$this->sidebar_links .= '<div>'.$this->itex_init_sape_get_links(intval($countsidebar)).'</div>';
+			}
+			$this->sidebar_links = $check.$this->sidebar_links;
+
+			$countfooter = $this->get_option('itex_m_sape_links_footer');
+			$check = $this->get_option('itex_m_global_debugenable')?'<!---check footer '.$countfooter.'-->':'';
+			$this->footer .= $check;
+			if ($countfooter == 'max')
+			{
+				//$this->footer = '<div>'.$this->sape->return_links().'</div>';
+			}
+			elseif ($countfooter == '0')
+			{
+				//$this->footer = '';
+			}
+			else
+			{
+				$this->footer .= '<div>'.$this->itex_init_sape_get_links($countfooter).'</div>';
+			}
+			$this->footer = $check.$this->footer;
+
+			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $this->itex_init_sape_get_links();
+			else
+			{
+				if  ($countsidebar == 'max') $this->sidebar_links .= $this->itex_init_sape_get_links();
+				else $this->footer .= $this->itex_init_sape_get_links();
+			}
 			
 		}
 
