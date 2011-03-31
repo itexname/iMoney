@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.28.1 (31-01-2011)
+Version: 0.29 (31-03-2011)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -126,7 +126,7 @@ Html - Введите ваш html код в нужные места.
 
 class itex_money
 {
-	var $version = '0.28.1';
+	var $version = '0.29';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -155,6 +155,8 @@ class itex_money
 	var $wordpress = 1;
 	var $drupal = 0;
 	var $joomla = 0;
+	
+	var $isape_converted = 1;
 
 	/**
    	* constructor, function __construct()  in php4 not working
@@ -170,7 +172,10 @@ class itex_money
 		if ($this->wordpress)
 		{
 			if (!function_exists(add_action)) return 0;
-
+			
+			//if (!get_option('itex_m_isape_converted')) $this->isape_converted = 0; //для совместимомти с isape, через несколько месяцев надо удалить
+			//else $this->isape_converted = 0;
+			
 			add_action('widgets_init', array(&$this, 'itex_m_init'));
 			//add_action("widgets_init", array(&$this, 'itex_m_widget_init'));
 			add_action('admin_menu', array(&$this, 'itex_m_menu'));
@@ -192,6 +197,10 @@ class itex_money
 			
 			$GLOBALS['_MAMBOTS']->registerFunction('onAfterStart', array(&$this, 'itex_m_init'));
 		}
+        if ($this->wordpress)
+        {
+
+        }
 
 	}
 
@@ -246,6 +255,10 @@ class itex_money
 	{
 		if ($this->wordpress)
 		{
+			//if (!$this->isape_converted) //для совместимомти с isape, через несколько месяцев надо удалить
+			//{
+			//	$option  = str_ireplace('itex_m_','itex_s_',$option);
+			//}
 			return get_option($option);
 		}
 		if ($this->joomla)
@@ -287,6 +300,7 @@ class itex_money
 		return $text;
 	
 	}
+	
 	/**
    	* Url masking
    	*
@@ -324,7 +338,6 @@ class itex_money
 	}
 
 	
-
 	/**
    	* plugin init function 
    	*
@@ -427,7 +440,6 @@ class itex_money
 			$this->sape = new SAPE_client($o);
 
 			
-
 			$this->itex_init_sape_links();
 
 			///check it
@@ -924,6 +936,7 @@ class itex_money
 		$o['charset'] = $this->encoding;
 		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
 		$o['multi_site'] = true;
+		$o['use_cache'] = true; //кеширование, только для нового кода
 		if ($this->get_option('itex_m_trustlink_enable'))
 		{
 			$trustlink = new TrustlinkClient($o);
@@ -2083,6 +2096,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		
 		</div>
 		<?php
+		//phpinfo();
 		return true;
 	}
 
@@ -2366,6 +2380,12 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	{
 		if (isset($_POST['info_update']))
 		{
+			//if (!$this->isape_converted) //для совместимомти с isape, через несколько месяцев надо удалить
+			//{
+			//	$this->update_option('itex_m_isape_converted', 1);
+			//}
+			
+			
 			//phpinfo();die();
 			if (isset($_POST['sape_sapeuser']))
 			{
@@ -2932,6 +2952,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">www.sape.ru</a>
+						<br/>
 						<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php"><img src="http://img.sape.ru/bn/sape_001.gif" alt="www.sape.ru!" border="0" /></a>
 					</td>
 				</tr>
@@ -3032,7 +3054,17 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		if ($this->get_option('itex_m_trustlink_user'))
 		{
 			$file = $this->document_root . '/' . $this->get_option('itex_m_trustlink_user') . '/trustlink.php'; //<< Not working in multihosting.
-			if (file_exists($file)) {}
+			if (file_exists($file)) 
+			{
+				?>
+				<div style="margin:10px auto; padding:10px; text-align:center;">
+				<?php echo $this->__('Update from plagin', 'iMoney');?> trustlink.php? (<?php echo $file;?>)
+				<p class="submit">
+				<input type='submit' name='itex_m_trustlink_dir_create' value='<?php echo $this->__('Update', 'iMoney'); ?>' />
+				</p>
+				</div>
+				<?php 
+			}
 			else
 			{
 				$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/'.$this->get_option('itex_m_trustlink_user').'/trustlink.php';
@@ -3205,13 +3237,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
    	*/
 	function itex_m_trustlink_install_file()
 	{
-		//file trustlink.php from trustlink.ru vT0.4.3 26.12.2010
-		$file_php_content = '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';
+		//file trustlink.php from trustlink.ru T0.4.5 31.03.2011
+		$file_php_content = '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';
 		$file_php_content = gzuncompress(base64_decode($file_php_content));
 		$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/'.$this->get_option('itex_m_trustlink_user').'/trustlink.php';
 
 		$dir = dirname($file);
-		if (!@mkdir($dir, 0777))
+		if (!is_dir($dir) && !@mkdir($dir, 0777))
 		{
 			echo '
 
@@ -3231,8 +3263,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		}
 
 
-		//file template.tpl.html from trustlink.ru 26.12.2010
-		$file_php_content = 'eNqlk9tygjAQhu99ihSvlYgHKqa8S05AxjXJkDDaMr57Q9SOOL1oh+WGZH/+/chuiPOfIMsZCtHBkstMriuc70UmtpjnAmfvdCfyDRc5xzJj+X5N15tq1TPKj3VrOi0W3IBpCzSvYqA3dbKm9VT7A2KmFTLkVvaCnAEl0Fzi+IxkZyV8U6AM46B7TlgqhNJ1gfBo+0TbWumX3eu/fwKB6kE5v4iHUCBttPy9/PaFy8uLX1BQdYAAWfmJHHbZSCr6yujAor4CympjL4eJrrR/dAaH4Hwq5Igvm85nkTtRgBElxpNN2ZPhbofxAUXus1R144cmt6FqsCbpffZJB4gDde4j+XOdJHzWMzD8eL1dHgLq9hIX9mE49DUpSRgzHZQktc+iksQDCOlhnob0ff0qY0HSGBclrEQ/eZIOVUmfPkhI2kE5+wZPOSsu';
+		//file template.tpl.html from trustlink.ru 31.03.2011
+		$file_php_content = 'eNqtUttygyAQffcrqHk22GSah8TmVzoIqEwQHKDTpI7/XtZLFDvNdDpdH1h2zx7OATPrbpKfI0dyybeU7/i+QG3UEMaEKo8oRU+ibrRxRLlTVBNTCrWuFlq5xIpPfkTPu+Ya9HJtGDe+4etWS8HQhqf9F8IIvZRGvyuWUC21H9gUfQSoLpTp2FLpy+pkx68uIVKUXq/khVsxTSTEc0xHpj4o/e7tg4uyckektKmJfGx4Zt6CghV7+vubuxvb+0Y4JoXiSRWI+klDpW2o4XBI0z/Y+hc1/q7RHI84uwyPP2bWPzmiklj7Gg9E8TlCKHO5Zrc+a3Op6aWDHOpmSCBlUwobIPKEbcUJextHAA2wrPU2YI9hg6Ha4iUwGpGTEnjc2INgXY6tcfAAgIM1xOFR0CQWT2qHPvjCszFfHPze574A6Hwz+g==';
 		$file_php_content = gzuncompress(base64_decode($file_php_content));
 
 		$file = $dir.DIRECTORY_SEPARATOR.'template.tpl.html';
@@ -3578,6 +3610,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">begun.ru</a>
+						<br/>
 						<a target="_blank" href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">
 							<img src="http://promo.begun.ru/my/data/banners/107_04_partner.gif" alt="Покупаем рекламу. Дорого." border="0" height="60" width="468">
 						</a>
@@ -3755,6 +3789,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>
+						<br/>
 						<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">
 							<img src="http://adskape.ru/Banners/pr2-1.gif" alt="www.adskape.ru!">
 						</a>
@@ -3903,6 +3939,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">teasernet.com</a>
+						<br/>
 						<a target="_blank" href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">
 						<img src="http://pic5.teasernet.com/tz/2-468_60.gif"></a>
 						
@@ -4965,6 +5003,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">www.tnx.net</a>
+						<br/>
 						<a target="_blank" href="http://itex.name/go.php?http://www.tnx.net/?p=119596309"><img border="0" alt="Sell links on every page of your site to thousands of advertisers!" src="http://us1.tnx.net/tnx_468_60.gif" width="468" height="60"></a>
 					</td>
 				</tr>
@@ -5305,6 +5345,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">www.mainlink.ru</a>
+						<br/>
 						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851"><img src='http://www.mainlink.ru/i/banner/partners/468x1.gif' alt="www.mainlink.ru!" border='0'></a>
 					</td>
 				</tr>
@@ -5646,6 +5688,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">www.linkfeed.ru</a>
+						<br/>
 						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317"><img src="http://www.linkfeed.ru/banners/468x60_linkfeed.gif" alt="www.linkfeed.ru!"></a>
 					</td>
 				</tr>
@@ -6033,6 +6077,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://www.setlinks.ru/?pid=72567">www.setlinks.ru</a> 
+						<br/>
 						<a target="_blank" href="http://itex.name/go.php?http://www.setlinks.ru/?pid=72567"><img src="http://vip.setlinks.ru/images/38.gif" alt="www.setlinks.ru!" border="0" /></a> 
 					</td>
 				</tr>
@@ -6045,5 +6091,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 }
 
 if (function_exists(add_action)) $itex_money = & new itex_money();
-
+//if (isset($_GET['debug123']))
+//{
+//	phpinfo();die();
+//}
 ?>
