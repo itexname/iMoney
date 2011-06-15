@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.29 (31-03-2011)
+Version: 0.30 (16-06-2011)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 //if (!defined('_VALID_MOS') && !defined('_JEXEC'))
 //{
-//	echo 'FireStats: Restricted access';
+//	echo 'Restricted access';
 //	return;
 //}
 //
@@ -126,18 +126,19 @@ Html - Введите ваш html код в нужные места.
 
 class itex_money
 {
-	var $version = '0.29';
+	var $version = '0.30';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
 	var $sape;
 	var $sapecontext;
 	var $sapearticles;
-	var $links = array();
+	var $zilla;
 	var $tnx;
 	var $setlinks;
 	var $setlinkscontext;
 	//var $enable = false;
+	var $links = array();
 	var $sidebar = array();
 	var $sidebar_links = '';
 	var $footer = '';
@@ -155,7 +156,7 @@ class itex_money
 	var $wordpress = 1;
 	var $drupal = 0;
 	var $joomla = 0;
-	
+	var $bitrix = 0;
 	var $isape_converted = 1;
 
 	/**
@@ -168,24 +169,29 @@ class itex_money
 
 		$this->document_root = ($_SERVER['DOCUMENT_ROOT'] != str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]))?(str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"])):($_SERVER['DOCUMENT_ROOT']);
 
+		if (!$this->get_option('itex_m_install_date'))
+		{
+			$this->update_option('itex_m_install_date',time());
+		}
+
 
 		if ($this->wordpress)
 		{
 			if (!function_exists(add_action)) return 0;
-			
+
 			//if (!get_option('itex_m_isape_converted')) $this->isape_converted = 0; //для совместимомти с isape, через несколько месяцев надо удалить
 			//else $this->isape_converted = 0;
-			
+
 			add_action('widgets_init', array(&$this, 'itex_m_init'));
 			//add_action("widgets_init", array(&$this, 'itex_m_widget_init'));
 			add_action('admin_menu', array(&$this, 'itex_m_menu'));
 			add_action('wp_footer', array(&$this, 'itex_m_footer'));
 
 
-			if (!$this->get_option('itex_m_install_date'))
-			{
-				$this->update_option('itex_m_install_date',time());
-			}
+			//			if (!$this->get_option('itex_m_install_date'))
+			//			{
+			//				$this->update_option('itex_m_install_date',time());
+			//			}
 
 			$this->encoding = $this->get_option('blog_charset')?$this->get_option('blog_charset'):'UTF-8';
 
@@ -194,13 +200,13 @@ class itex_money
 		{
 			if (!defined('_VALID_MOS') && !defined('_JEXEC')) return 0;
 			if (!isset($GLOBALS['_MAMBOTS'])) return 0;
-			
+
 			$GLOBALS['_MAMBOTS']->registerFunction('onAfterStart', array(&$this, 'itex_m_init'));
 		}
-        if ($this->wordpress)
-        {
+		if ($this->bitrix)
+		{
 
-        }
+		}
 
 	}
 
@@ -265,8 +271,12 @@ class itex_money
 		{
 			return $GLOBALS['params']->get($option);
 		}
-		
-		
+
+		if ($this->bitrix)
+		{
+			return COption::GetOptionString("imoney", $option, false);
+		}
+
 		return false;
 	}
 
@@ -280,6 +290,12 @@ class itex_money
 		{
 			return update_option($option,$value);
 		}
+
+		if ($this->bitrix)
+		{
+			return COption::SetOptionString("imoney", $option, $value);
+		}
+
 		return false;
 	}
 
@@ -297,10 +313,16 @@ class itex_money
 		{
 			return JText::_($text);
 		}
+		if ($this->bitrix)
+		{
+			$text2 = GetMessage($text);
+			if (!empty($text2))
+			return $text2;
+		}
 		return $text;
-	
+
 	}
-	
+
 	/**
    	* Url masking
    	*
@@ -338,6 +360,46 @@ class itex_money
 	}
 
 	
+
+	/**
+   	* get links
+   	*
+   	* @param   int   $c		count
+   	* @param   int   $c		a only if 1
+    * @return  string $ret  
+   	*/
+	function itex_m_get_links($c = 30, $q=1) //$q = a only
+	{
+		$ret = '';
+		for ($i=1;$i<=$c;$i++)
+		{
+			if ($q)
+			{
+				if (count($this->links['a_only']))
+				foreach ($this->links['a_only'] as $k=>$v)
+				{
+					$ret .= $v;
+					//$ret .= $this;
+
+					unset($this->links['a_only'][$k]);
+					break;
+				}
+			}
+			else
+			{
+				if (count($this->links['a_text']))
+				foreach ($this->links['a_text'] as $k=>$v)
+				{
+					$ret .= $v;
+					unset($this->links['a_text'][$k]);
+					break;
+				}
+			}
+		}
+		return $ret;
+	}
+
+
 	/**
    	* plugin init function 
    	*
@@ -369,7 +431,8 @@ class itex_money
 		$this->itex_init_setlinks();
 		$this->itex_init_teasernet();
 		$this->itex_init_trustlink();
-
+		$this->itex_init_zilla();
+		
 		$this->itex_m_widget_init();
 		if (strlen($this->footer))
 		{
@@ -440,7 +503,47 @@ class itex_money
 			$this->sape = new SAPE_client($o);
 
 			
-			$this->itex_init_sape_links();
+
+
+			//добавляем ссылки в линкс
+			$i = 1;
+			while ($i++)
+			{
+				$q = trim($this->sape->return_links(1));
+				if (empty($q) || !strlen($q))
+				{
+					break;
+				}
+
+
+
+				//убрал, тк сайт не индексируются возможно из-за этого
+				//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->sape->_links_delimiter; // убираем коммент, не повредит дебагу?
+
+				if (strlen($q)) $this->links['a_only'][] = $q.$this->sape->_links_delimiter;
+
+				$q1 = trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет
+				if (empty($q1) || !strlen($q1))
+				{
+					break;
+				}
+
+				//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
+				if ($i > 30) break;
+			}
+			if (!count($this->links)) // если нет размещенных ссылок, и включен debugenable добавляем чеккод
+			{
+				if ($this->get_option('itex_m_global_debugenable'))
+				$this->links['a_only'][] = trim($this->sape->return_links());
+			}
+			$this->itex_debug('sape links:'.var_export($this->links, true));
+
+
+			//$this->itex_init_sape_links();
+
+
+
+
 
 			///check it
 			$url = 1;
@@ -454,7 +557,7 @@ class itex_money
 				}
 				else
 				{
-					$this->beforecontent .= '<div>'.$this->itex_init_sape_get_links(intval($this->get_option('itex_sape_links_beforecontent'))).'</div>';
+					$this->beforecontent .= '<div>'.$this->itex_m_get_links(intval($this->get_option('itex_sape_links_beforecontent'))).'</div>';
 				}
 
 				if ($this->get_option('itex_m_sape_links_aftercontent') == '0')
@@ -464,7 +567,7 @@ class itex_money
 				else
 				{
 					
-					$this->aftercontent .= '<div>'.$css.$this->itex_init_sape_get_links(intval($this->get_option('itex_m_sape_links_aftercontent'))).'</div>';
+					$this->aftercontent .= '<div>'.$css.$this->itex_m_get_links(intval($this->get_option('itex_m_sape_links_aftercontent'))).'</div>';
 				}
 			}
 			$countsidebar = $this->get_option('itex_m_sape_links_sidebar');
@@ -479,7 +582,7 @@ class itex_money
 			}
 			else
 			{
-				$this->sidebar_links .= '<div>'.$this->itex_init_sape_get_links(intval($countsidebar)).'</div>';
+				$this->sidebar_links .= '<div>'.$this->itex_m_get_links(intval($countsidebar)).'</div>';
 			}
 			$this->sidebar_links = $check.$this->sidebar_links;
 
@@ -496,17 +599,19 @@ class itex_money
 			}
 			else
 			{
-				$this->footer .= '<div>'.$this->itex_init_sape_get_links($countfooter).'</div>';
+				$this->footer .= '<div>'.$this->itex_m_get_links($countfooter).'</div>';
 			}
 			$this->footer = $check.$this->footer;
 
-			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $this->itex_init_sape_get_links();
+			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $this->itex_m_get_links();
 			else
 			{
-				if  ($countsidebar == 'max') $this->sidebar_links .= $this->itex_init_sape_get_links();
-				else $this->footer .= $this->itex_init_sape_get_links();
+				if  ($countsidebar == 'max') $this->sidebar_links .= $this->itex_m_get_links();
+				else $this->footer .= $this->itex_m_get_links();
 			}
 			
+			
+			if (strlen($this->sape->_error))$this->itex_debug('sape error:'.var_export($this->sape->_error, true));
 		}
 
 		if ($this->get_option('itex_m_sape_sapecontext_enable'))
@@ -674,7 +779,7 @@ class itex_money
    	*
    	* @return  bool
    	*/
-	function itex_init_sape_links()
+	function itex_init_sape_links_del()
 	{
 		$i = 1;
 
@@ -686,17 +791,19 @@ class itex_money
 				break;
 			}
 
-			$q1 = trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет
-			if (empty($q1) || !strlen($q1))
-			{
-				break;
-			}
+
 
 			//убрал, тк сайт не индексируются возможно из-за этого
 			//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->sape->_links_delimiter; // убираем коммент, не повредит дебагу?
 
 			
 			if (strlen($q)) $this->links['a_only'][] = $q.$this->sape->_links_delimiter;
+
+			$q1 = trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет
+			if (empty($q1) || !strlen($q1))
+			{
+				break;
+			}
 
 			//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
 			if ($i > 30) break;
@@ -710,43 +817,6 @@ class itex_money
 		return 1;
 	}
 
-	/**
-   	* get links
-   	*
-   	* @param   int   $c		count
-   	* @param   int   $c		a only if 1
-    * @return  string $ret  
-   	*/
-	function itex_init_sape_get_links($c = 30, $q=1) //$q = a only
-	{
-		$ret = '';
-		for ($i=1;$i<=$c;$i++)
-		{
-			if ($q)
-			{
-				if (count($this->links['a_only']))
-				foreach ($this->links['a_only'] as $k=>$v)
-				{
-					$ret .= $v;
-					//$ret .= $this;
-
-					unset($this->links['a_only'][$k]);
-					break;
-				}
-			}
-			else
-			{
-				if (count($this->links['a_text']))
-				foreach ($this->links['a_text'] as $k=>$v)
-				{
-					$ret .= $v;
-					unset($this->links['a_text'][$k]);
-					break;
-				}
-			}
-		}
-		return $ret;
-	}
 
 
 	/**
@@ -817,6 +887,150 @@ class itex_money
 		//die('itex_init_sape_articles_wp_head');
 
 		return ;
+	}
+
+
+	/**
+   	* zilla init
+   	*
+   	* @return  bool
+   	*/
+	function itex_init_zilla()
+	{
+		if (!$this->get_option('itex_m_zilla_enable') ) return 0;
+
+		if (!defined('_zilla_USER')) define('_ZILLA_USER', $this->get_option('itex_m_zilla_user'));
+		else $this->error .= '_ZILLA_USER '.$this->__('already defined<br/>', 'iMoney');
+		$this->itex_debug('_ZILLA_USER = '.$this->get_option('itex_m_zilla_user'));
+
+		//FOR MASS INSTALL ONLY, REPLACE if (0) ON if (1)
+		//		if (0)
+		//		{
+		//			$this->update_option('itex_zilla_user', 'abcdarfkwpkgfkhagklhskdgfhqakshgakhdgflhadh'); //zilla uid
+		//			$this->update_option('itex_zillacontext_enable', 1);
+		//			$this->update_option('itex_zilla_enable', 1);
+		//			$this->update_option('itex_zilla_links_footer', 'max');
+		//		}
+
+		$file = $this->document_root . '/' . $this->get_option('itex_m_zilla_user') . '/zilla.php'; //<< Not working in multihosting.
+		if (file_exists($file)) require_once($file);
+		else return 0;
+		$this->itex_debug('zilla file:'.$file);
+		$o['charset'] = $this->encoding;
+		//$o['force_show_code'] = $this->force_show_code;
+		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
+		$o['multi_site'] = true;
+		if ($this->get_option('itex_m_zilla_enable'))
+		{
+			$this->zilla = new ZILLA_client($o);
+
+
+			$i = 1;
+
+			while ($i++)
+			{
+				$q = trim($this->zilla->return_links(1));
+				if (empty($q) || !strlen($q))
+				{
+					break;
+				}
+
+
+
+				//убрал, тк сайт не индексируются возможно из-за этого
+				//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->zilla->_links_delimiter; // убираем коммент, не повредит дебагу?
+
+				if (strlen($q)) $this->links['a_only'][] = $q.$this->zilla->_links_delimiter;
+
+				$q1 = trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет, но если что показали чеккод
+				if (empty($q1) || !strlen($q1))
+				{
+					break;
+				}
+
+				//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
+				if ($i > 30) break;
+			}
+			if (!count($this->links)) // если нет размещенных ссылок, и включен debugenable добавляем чеккод
+			{
+				if ($this->get_option('itex_m_global_debugenable'))
+				$this->links['a_only'][] = trim($this->zilla->return_links());
+			}
+			$this->itex_debug('zilla links:'.var_export($this->links, true));
+
+			//$this->itex_init_zilla_links();
+
+			///check it
+			$url = 1;
+			if ($this->wordpress) if (is_object($GLOBALS['wp_rewrite'])) $url = url_to_postid($_SERVER['REQUEST_URI']);
+
+			if (($url) || !$this->get_option('itex_zilla_pages_enable'))
+			{
+				if ($this->get_option('itex_m_zilla_links_beforecontent') == '0')
+				{
+					//$this->beforecontent = '';
+				}
+				else
+				{
+					$this->beforecontent .= '<div>'.$this->itex_m_get_links(intval($this->get_option('itex_zilla_links_beforecontent'))).'</div>';
+				}
+
+				if ($this->get_option('itex_m_zilla_links_aftercontent') == '0')
+				{
+					//$this->aftercontent = '';
+				}
+				else
+				{
+					
+					$this->aftercontent .= '<div>'.$css.$this->itex_m_get_links(intval($this->get_option('itex_m_zilla_links_aftercontent'))).'</div>';
+				}
+			}
+			$countsidebar = $this->get_option('itex_m_zilla_links_sidebar');
+			$check = $this->get_option('itex_m_global_debugenable')?'<!---check sidebar '.$countsidebar.'-->':'';
+			if ($countsidebar == 'max')
+			{
+				//$this->sidebar = '<div>'.$this->zilla->return_links().'</div>';
+			}
+			elseif ($countsidebar == '0')
+			{
+				//$this->sidebar = '';
+			}
+			else
+			{
+				$this->sidebar_links .= '<div>'.$this->itex_m_get_links(intval($countsidebar)).'</div>';
+			}
+			$this->sidebar_links = $check.$this->sidebar_links;
+
+			$countfooter = $this->get_option('itex_m_zilla_links_footer');
+			$check = $this->get_option('itex_m_global_debugenable')?'<!---check footer '.$countfooter.'-->':'';
+			$this->footer .= $check;
+			if ($countfooter == 'max')
+			{
+				//$this->footer = '<div>'.$this->zilla->return_links().'</div>';
+			}
+			elseif ($countfooter == '0')
+			{
+				//$this->footer = '';
+			}
+			else
+			{
+				$this->footer .= '<div>'.$this->itex_m_get_links($countfooter).'</div>';
+			}
+			$this->footer = $check.$this->footer;
+
+			if (($countsidebar == 'max') && ($countfooter == 'max')) $this->footer .= $this->itex_m_get_links();
+			else
+			{
+				if  ($countsidebar == 'max') $this->sidebar_links .= $this->itex_m_get_links();
+				else $this->footer .= $this->itex_m_get_links();
+			}
+			if (strlen($this->zilla->_error))$this->itex_debug('zilla error:'.var_export($this->zilla->_error, true));
+		}
+
+
+
+
+		return 1;
 	}
 
 	/**
@@ -1585,12 +1799,12 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			{
 				if ((bool)$this->get_option('itex_m_setlinks_links_beforecontent'))
 				{
-					$this->beforecontent .= '<div>'.$this->itex_init_sape_get_links(intval($this->get_option('itex_m_setlinks_links_beforecontent'))).'</div>';
+					$this->beforecontent .= '<div>'.$this->itex_m_get_links(intval($this->get_option('itex_m_setlinks_links_beforecontent'))).'</div>';
 				}
 
 				if ((bool)$this->get_option('itex_m_setlinks_links_aftercontent'))
 				{
-					$this->aftercontent .= '<div>'.$this->itex_init_sape_get_links(intval($this->get_option('itex_m_setlinks_links_aftercontent'))).'</div>';
+					$this->aftercontent .= '<div>'.$this->itex_m_get_links(intval($this->get_option('itex_m_setlinks_links_aftercontent'))).'</div>';
 				}
 			}
 
@@ -1606,7 +1820,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			}
 			else
 			{
-				$this->sidebar_links .= '<div>'.$this->itex_init_sape_get_links(intval($countsidebar)).'</div>';
+				$this->sidebar_links .= '<div>'.$this->itex_m_get_links(intval($countsidebar)).'</div>';
 			}
 			$this->sidebar_links = $check.$this->sidebar_links;
 
@@ -1620,18 +1834,18 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			} elseif ($countfooter == '0') {
 				//$this->footer = '';
 			} else {
-				$this->footer .= '<div>'.$this->itex_init_sape_get_links($countfooter).'</div>';
+				$this->footer .= '<div>'.$this->itex_m_get_links($countfooter).'</div>';
 			}
 			$this->footer = $check.$this->footer;
 
 			if (($countsidebar == 'max') && ($countfooter == 'max'))
 			{
-				$this->footer .= $this->itex_init_sape_get_links();
+				$this->footer .= $this->itex_m_get_links();
 			} else {
 				if ($countsidebar == 'max')
 				{
-					$this->sidebar_links .= $this->itex_init_sape_get_links();
-				} else $this->footer .= $this->itex_init_sape_get_links();
+					$this->sidebar_links .= $this->itex_m_get_links();
+				} else $this->footer .= $this->itex_m_get_links();
 			}
 		}
 
@@ -1942,7 +2156,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
    	*/
 	function itex_m_admin()
 	{
-		if (!is_admin()) return 0;
+		if ($this->wordpress)
+		{
+			if (!is_admin()) return 0;
+		}
+
 		//$this->lang_ru();
 		$this->itex_m_admin_css();
 		// Output the options page
@@ -1995,7 +2213,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
         			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
         			<li style="display: inline;"><a href="#itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></li>
         			<li style="display: inline;"><a href="#itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></li>
-        			
+        			<li style="display: inline;"><a href="#itex_zilla" onclick='document.getElementById("itex_zilla").style.display="";'>Serpzilla</a></li>
         				
         		</ul>
         		<p class="submit">
@@ -2043,6 +2261,10 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
        	 		
        	 		<h3><a href="#itex_teasernet" name="itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></h3>
        	 		<div id="itex_teasernet"><?php $this->itex_m_admin_teasernet(); ?></div>
+       	 		
+       	 		<h3><a href="#itex_zilla" name="itex_zilla" onclick='document.getElementById("itex_zilla").style.display="";'>Serpzilla</a></h3>
+       	 		<div id="itex_zilla"><?php $this->itex_m_admin_zilla(); ?></div>
+       	 		
        	 		<?php 
        	 		if(!$this->get_option('itex_m_global_collapse')){ ?>
        	 		<script type="text/javascript">
@@ -2059,6 +2281,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
        	 		document.getElementById("itex_setlinks").style.display="none";
        	 		document.getElementById("itex_teasernet").style.display="none";
        	 		document.getElementById("itex_trustlink").style.display="none";
+       	 		document.getElementById("itex_zilla").style.display="none";
        	 		document.getElementById("itex_global").style.display="none";
        	 		</script>	
        	 		<?php } ?>
@@ -2083,7 +2306,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
         			<li style="display: inline;"><a href="#itex_adskape" onclick='document.getElementById("itex_adskape").style.display="";'>Adskape</a></li>
         			<li style="display: inline;"><a href="#itex_setlinks" onclick='document.getElementById("itex_setlinks").style.display="";'>SetLinks</a></li>
         			<li style="display: inline;"><a href="#itex_teasernet" onclick='document.getElementById("itex_teasernet").style.display="";'>Teasernet</a></li>
-        			
+        			<li style="display: inline;"><a href="#itex_zilla" onclick='document.getElementById("itex_zilla").style.display="";'>Serpzilla</a></li>
         		
         	</ul>
         	<p align="center">
@@ -2163,6 +2386,58 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	}
 
 	/**
+   	* Admin menu input
+   	*
+   	*/
+	function itex_m_admin_input($name,$description)
+	{
+		//if (!is_admin()) return 0;
+		if (isset($_POST['info_update']))
+		{
+			if (isset($_POST[$name]))
+			{
+				$this->update_option($name, $_POST[$name]);
+			}
+		}
+		echo '<input type="text" size="50" ';
+		echo 'name="'.$name.'" ';
+		echo 'id="'.$name.'" ';
+		echo 'value="'.$this->get_option($name).'" />'."\n";
+		echo '<p style="margin: 5px 10px;">'.$description.'</p>';
+
+	}
+
+	/**
+   	* Admin menu input
+   	*
+   	*/
+	function itex_m_admin_select($name,$options,$description)
+	{
+		//if (!is_admin()) return 0;
+		if (isset($_POST['info_update']))
+		{
+			if (isset($_POST[$name]))
+			{
+				$this->update_option($name, $_POST[$name]);
+			}
+		}
+
+		echo '<select name="'.$name.'" id="'.$name.'">'."\n";
+
+		foreach ($options as $k=>$v)
+		{
+			echo '<option value="'.$k.'"';
+			if($this->get_option($name) == $k) echo ' selected="selected"';
+			echo ">".$v."</option>\n";
+		}
+		echo "</select>\n";
+
+		echo '<label for="">'.$description.'.</label>';
+
+		echo "<br/>";
+	}
+
+	/**
    	* Global section admin menu
    	*
    	*/
@@ -2230,6 +2505,14 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td>
 						<?php
+
+
+
+
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__('Masking of links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_global_masking', $o, $d);
+						/*
 						echo "<select name='global_masking' id='global_masking'>\n";
 						echo "<option value='1'";
 
@@ -2241,7 +2524,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo $this->__(">Disabled</option>\n", 'iSape');
 						echo "</select>\n";
 
-						echo '<label for="">'.$this->__('Masking of links', 'iMoney').'.</label>';
+						echo '<label for="">'.$this->__('Masking of links', 'iMoney').'.</label>';*/
 
 						?>
 					</td>
@@ -2252,7 +2535,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td>
 						<?php
-						echo "<select name='global_debugenable' id='global_debugenable'>\n";
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__('Debug log in footer. For see debug user must register', 'iMoney');
+						$this->itex_m_admin_select('itex_m_global_debugenable', $o, $d);
+
+						/*echo "<select name='global_debugenable' id='global_debugenable'>\n";
 						echo "<option value='1'";
 
 						if($this->get_option('itex_m_global_debugenable')) echo " selected='selected'";
@@ -2265,9 +2552,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo '<label for="">'.$this->__('Debug log in footer. For see debug user must register', 'iMoney').'.</label>';
 
-						echo "<br/>";
+						echo "<br/>";*/
 
-						echo "<select name='global_debugenable_forall' id='global_debugenable_forall'>\n";
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__('Debug log in footer for all, who open the site. Dont leave this parameter switched Enabled for a long time, because in this case it will disclose your private data like SAPE UID', 'iMoney');
+						$this->itex_m_admin_select('itex_m_global_debugenable_forall', $o, $d);
+
+						/*	echo "<select name='global_debugenable_forall' id='global_debugenable_forall'>\n";
 						echo "<option value='1'";
 
 						if($this->get_option('itex_m_global_debugenable_forall')) echo " selected='selected'";
@@ -2279,7 +2570,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "</select>\n";
 
 						echo '<label for="">'.$this->__('Debug log in footer for all, who open the site. Dont leave this parameter switched Enabled for a long time, because in this case it will disclose your private data like SAPE UID', 'iMoney').'.</label>';
-
+						*/
 						?>
 					</td>
 				</tr>
@@ -2289,37 +2580,39 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td>
 						<?php
-						$ws = wp_get_sidebars_widgets();
+						if ($this->wordpress)
+						{
+							$ws = wp_get_sidebars_widgets();
 
+							//вывод селектов не через функцию
+							echo "<select name='global_widget_links' id='global_widget_links'>\n";
+							echo "<option value='0'";
+							if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
+							echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
 
-						echo "<select name='global_widget_links' id='global_widget_links'>\n";
-						echo "<option value='0'";
-						if (count($ws['sidebar-1'])) if(!in_array('imoney-links',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
+							echo "<option value='1'";
+							if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
+							echo ">".$this->__('Active','iMoney')."</option>\n";
 
-						echo "<option value='1'";
-						if (count($ws['sidebar-1'])) if (in_array('imoney-links',$ws['sidebar-1'])) echo " selected='selected'";
-						echo ">".$this->__('Active','iMoney')."</option>\n";
+							echo "</select>\n";
 
-						echo "</select>\n";
+							echo '<label for="">'.$this->__('Widget Links Active', 'iMoney').'</label>';
 
-						echo '<label for="">'.$this->__('Widget Links Active', 'iMoney').'</label>';
+							echo "<br/>\n";
 
-						echo "<br/>\n";
+							echo "<select name='global_widget_dynamic' id='global_widget_dynamic'>\n";
+							echo "<option value='0'";
+							if (count($ws['sidebar-1'])) if(!in_array('imoney-dynamic',$ws['sidebar-1'])) echo" selected='selected'";
+							echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
 
-						echo "<select name='global_widget_dynamic' id='global_widget_dynamic'>\n";
-						echo "<option value='0'";
-						if (count($ws['sidebar-1'])) if(!in_array('imoney-dynamic',$ws['sidebar-1'])) echo" selected='selected'";
-						echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
+							echo "<option value='1'";
+							if (count($ws['sidebar-1'])) if (in_array('imoney-dynamic',$ws['sidebar-1'])) echo " selected='selected'";
+							echo ">".$this->__('Active','iMoney')."</option>\n";
 
-						echo "<option value='1'";
-						if (count($ws['sidebar-1'])) if (in_array('imoney-dynamic',$ws['sidebar-1'])) echo " selected='selected'";
-						echo ">".$this->__('Active','iMoney')."</option>\n";
+							echo "</select>\n";
 
-						echo "</select>\n";
-
-						echo '<label for="">'.$this->__('Widget Dynamic Active', 'iMoney').'</label>';
-
+							echo '<label for="">'.$this->__('Widget Dynamic Active', 'iMoney').'</label>';
+						}
 						?>
 					</td>
 				</tr>
@@ -2330,7 +2623,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td>
 						<?php
-						echo "<select name='global_collapse' id='global_collapse'>\n";
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = '';
+						$this->itex_m_admin_select('itex_m_global_collapse', $o, $d);
+
+						/*echo "<select name='global_collapse' id='global_collapse'>\n";
 						echo "<option value='1'";
 
 						if(!$this->get_option('itex_m_global_collapse')) echo " selected='selected'";
@@ -2339,7 +2636,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "<option value='0'";
 						if($this->get_option('itex_m_global_collapse')) echo" selected='selected'";
 						echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
-						echo "</select>\n";
+						echo "</select>\n";*/
 
 
 						?>
@@ -2384,8 +2681,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			//{
 			//	$this->update_option('itex_m_isape_converted', 1);
 			//}
-			
-			
+
+
 			//phpinfo();die();
 			if (isset($_POST['sape_sapeuser']))
 			{
@@ -2540,7 +2837,12 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td>
 						<?php
-						echo "<select name='sape_enable' id='sape_enable'>\n";
+
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__("Working", 'iMoney');
+						$this->itex_m_admin_select('itex_m_sape_enable', $o, $d);
+
+						/*echo "<select name='sape_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
 
 						if($this->get_option('itex_m_sape_enable')) echo " selected='selected'";
@@ -2552,9 +2854,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "</select>\n";
 
 						echo '<label for="">'.$this->__("Working", 'iMoney').'</label>';
-						echo "<br/>\n";
+						echo "<br/>\n";*/
 
-						echo "<select name='sape_links_beforecontent' id='sape_links_beforecontent'>\n";
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5',);
+						$d = $this->__('Before content links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_sape_links_beforecontent', $o, $d);
+
+						/*echo "<select name='sape_links_beforecontent' id='sape_links_beforecontent'>\n";
 
 						echo "<option value='0'";
 						if(!$this->get_option('itex_m_sape_links_beforecontent')) echo" selected='selected'";
@@ -2585,8 +2891,12 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo '<label for="">'.$this->__('Before content links', 'iMoney').'</label>';
 
 						echo "<br/>\n";
+						*/
 
-
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5',);
+						$d = $this->__('After content links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_sape_links_aftercontent', $o, $d);
+						/*
 
 						echo "<select name='sape_links_aftercontent' id='sape_links_aftercontent'>\n";
 
@@ -2618,9 +2928,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo '<label for="">'.$this->__('After content links', 'iMoney').'</label>';
 
-						echo "<br/>\n";
+						echo "<br/>\n";*/
 
-						echo "<select name='sape_links_sidebar' id='sape_links_sidebar'>\n";
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5','max' => $this->__('Max', 'iMoney'),);
+						$d = $this->__('Sidebar links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_sape_links_sidebar', $o, $d);
+
+						/*echo "<select name='sape_links_sidebar' id='sape_links_sidebar'>\n";
 
 						echo "<option value='0'";
 						if(!$this->get_option('itex_m_sape_links_sidebar')) echo" selected='selected'";
@@ -2654,10 +2968,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo '<label for="">'.$this->__('Sidebar links', 'iMoney').'</label>';
 
-						echo "<br/>\n";
+						echo "<br/>\n";*/
 
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5','max' => $this->__('Max', 'iMoney'),);
+						$d = $this->__('Footer links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_sape_links_footer', $o, $d);
 
-						echo "<select name='sape_links_footer' id='sape_links_footer'>\n";
+						/*echo "<select name='sape_links_footer' id='sape_links_footer'>\n";
 						echo "<option value='0'";
 						if(!$this->get_option('itex_m_sape_links_footer')) echo" selected='selected'";
 						echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
@@ -2690,8 +3007,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo '<label for="">'.$this->__('Footer links', 'iMoney').'</label>';
 
-						echo "<br/>\n";
-						echo "<select name='sape_pages_enable' id='sape_enable'>\n";
+						echo "<br/>\n";*/
+
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__('Show content links only on Pages and Posts.', 'iMoney');
+						$this->itex_m_admin_select('itex_m_sape_pages_enable', $o, $d);
+
+						/*echo "<select name='sape_pages_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
 
 						if($this->get_option('itex_m_sape_pages_enable')) echo " selected='selected'";
@@ -2704,7 +3026,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo '<label for="">'.$this->__('Show content links only on Pages and Posts.', 'iMoney').'</label>';
 
-						echo "<br/>\n";
+						echo "<br/>\n";*/
 						?>
 					</td>
 					
@@ -3003,6 +3325,175 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	}
 
 	/**
+   	* Serpzilla section admin menu
+   	*
+   	*/
+	function itex_m_admin_zilla()
+	{
+		if (isset($_POST['info_update']))
+		{
+			if (isset($_POST['itex_m_zilla_user']))
+			{
+				$this->update_option('itex_m_zilla_user', trim($_POST['itex_m_zilla_user']));
+			}
+			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
+		}
+
+		////////////////////////////////////////////////////////////////////////////////////////
+
+		if (isset($_POST['itex_m_zilla_dir_create']))
+		{
+			if ($this->get_option('itex_m_zilla_user'))  $this->itex_m_zilla_install_file();
+		}
+
+		if ($this->get_option('itex_m_zilla_user'))
+		{
+			$file = $this->document_root . '/' . _ZILLA_USER . '/zilla.php'; //<< Not working in multihosting.
+			if (file_exists($file)) {}
+			else
+			{
+				$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/'.$this->get_option('itex_m_zilla_user').'/zilla.php';
+				if (file_exists($file)) {}
+			else {?>
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				Serpzilla <?php echo $this->__('dir not exist!', 'iMoney'); ?>
+		</div>
+		<div style="margin:10px auto; border:3px #f00 solid; padding:10px; text-align:center;">
+				<?php echo $this->__('Create new dir and', 'iMoney'); ?> zilla.php? (<?php echo $file;?>)
+				<p class="submit">
+				<input type='submit' name='itex_m_zilla_dir_create' value='<?php echo $this->__('Create', 'iMoney'); ?>' />
+				</p>
+				<?php
+				if (!$this->get_option('itex_m_zilla_user')) echo '<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/">'.$this->__('Enter your Serpzilla UID in this box.', 'iMoney').'</a>';
+
+				?>
+		</div>
+		
+		<?php }
+			}
+		}
+		?>
+		<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+				<tr>
+					<th valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo $this->__('Your Serpzilla UID:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+						echo "<input type='text' size='50' ";
+						echo "name='itex_m_zilla_user'";
+						echo "id='itex_m_zilla_user' ";
+						echo "value='".$this->get_option('itex_m_zilla_user')."' />\n";
+						?>
+						<p style="margin: 5px 10px;"><?php 
+
+						echo '<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/">'.$this->__('Enter your Serpzilla UID in this box!', 'iMoney').'</a>';
+
+						?></p>
+					</td>
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo $this->__('Serpzilla links:', 'iMoney');?></label>
+					</th>
+					<td>
+						<?php
+
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__("Working", 'iMoney');
+						$this->itex_m_admin_select('itex_m_zilla_enable', $o, $d);
+
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5',);
+						$d = $this->__('Before content links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_zilla_links_beforecontent', $o, $d);
+
+
+
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5',);
+						$d = $this->__('After content links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_zilla_links_aftercontent', $o, $d);
+
+
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5','max' => $this->__('Max', 'iMoney'),);
+						$d = $this->__('Sidebar links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_zilla_links_sidebar', $o, $d);
+
+
+						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5','max' => $this->__('Max', 'iMoney'),);
+						$d = $this->__('Footer links', 'iMoney');
+						$this->itex_m_admin_select('itex_m_zilla_links_footer', $o, $d);
+
+
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__('Show content links only on Pages and Posts.', 'iMoney');
+						$this->itex_m_admin_select('itex_m_zilla_pages_enable', $o, $d);
+
+						?>
+					</td>
+					
+					
+				</tr>
+								
+				
+				
+				
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""></label>
+					</th>
+					<td align="center">
+						<br/><br/>
+						<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/">www.serpzilla.com</a>
+						<br/>
+						<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/"><img src="http://img.sape.ru/bn/sape_001.gif" alt="www.sape.ru!" border="0" /></a>
+					</td>
+				</tr>
+			</table>
+			<?php
+	}
+
+	/**
+   	* Serpzilla file installation
+   	*
+   	* @return  bool
+   	*/
+	function itex_m_zilla_install_file()
+	{
+		//file zilla.php from beta.serpzilla.com (v 0.2, 22.04.2011) 19.05.2011
+		$sape_php_content = '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';
+		$sape_php_content = gzuncompress(base64_decode($sape_php_content));
+		$file = str_replace($_SERVER["SCRIPT_NAME"],'',$_SERVER["SCRIPT_FILENAME"]).'/'.$this->get_option('itex_m_zilla_user').'/zilla.php';
+
+		$dir = dirname($file);
+		if (!@mkdir($dir, 0777))
+		{
+			echo '
+
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.$this->__('Can`t create Serpzilla dir!', 'iMoney').'
+		</div>';
+			return 0;
+		}
+		chmod($dir, 0777);  //byli gluki s mkdir($dir, 0777)
+		if (!file_put_contents($file,$sape_php_content))
+		{
+			echo '
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.$this->__('Can`t create', 'iMoney').' zilla.php!
+		</div>';
+			return 0;
+		}
+		//chmod($file, 0777);
+		file_put_contents($dir.'/.htaccess',"deny from all\r\n");
+		echo '
+		<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
+				'.$this->__('Serpzilla dir and zilla.php created!', 'iMoney').'
+		</div>';
+		//die();
+		return 1;
+	}
+
+	/**
    	* Trustlink section admin menu
    	*
    	*/
@@ -3054,7 +3545,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		if ($this->get_option('itex_m_trustlink_user'))
 		{
 			$file = $this->document_root . '/' . $this->get_option('itex_m_trustlink_user') . '/trustlink.php'; //<< Not working in multihosting.
-			if (file_exists($file)) 
+			if (file_exists($file))
 			{
 				?>
 				<div style="margin:10px auto; padding:10px; text-align:center;">
@@ -3237,6 +3728,8 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
    	*/
 	function itex_m_trustlink_install_file()
 	{
+		//http://www.trustlink.ru/user/get_php_code?orientation=0&block_color=ffffff&border_color=e0e0e0e&anchor_color=0000cc&text_color=000000&url_color=006600
+
 		//file trustlink.php from trustlink.ru T0.4.5 31.03.2011
 		$file_php_content = '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';
 		$file_php_content = gzuncompress(base64_decode($file_php_content));
@@ -4009,7 +4502,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				//				if (!$ex && ($_POST['html_sidebar_enable'])) $s_w['sidebar-1'][] = 'imoney_html';
 				//				wp_set_sidebars_widgets( $s_w );
 			}
-			wp_cache_flush();
+			//wp_cache_flush();
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		?>
@@ -4238,7 +4731,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 
 
-			wp_cache_flush();
+			//wp_cache_flush();
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		?>
@@ -4526,7 +5019,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				//				if (!$ex && ($_POST['ilinks_sidebar_enable'])) $s_w['sidebar-1'][] = 'imoney_ilinks';
 				//				wp_set_sidebars_widgets( $s_w );
 			}
-			wp_cache_flush();
+			//wp_cache_flush();
 			echo "<div class='updated fade'><p><strong>Settings saved.</strong></p></div>";
 		}
 		?>
@@ -4773,7 +5266,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			if (file_exists($file)) {}
 				else {?>
 		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
-				tnx dir not exist!
+		tnx dir not exist!
 		</div>
 		<div style="margin:10px auto; border:3px #f00 solid; padding:10px; text-align:center;">
 				Create new tnxdir and tnx.php? (<?php echo $file;?>)
