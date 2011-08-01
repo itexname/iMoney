@@ -1,11 +1,11 @@
-=== Plugin Name ===
-Contributors: itex
+=== iMoney ===
+Contributors: itex
 Donate link: http://itex.name/donation/
 Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense
 Requires at least: 2.3
 Tested up to: 2.6.3
-Stable tag: 0.07
+Stable tag: 0.31
 
 == Description ==
 en
@@ -15,14 +15,6 @@ Placing Ads or links up to the text of page, after page of text in the widget an
 Widget course customizable.
 Automatic installation of a plug and the rights to the sape and tnx folder on request.
 Adjustment of amount of displayed links depending on the location.
-
-ru
-Плагин iMoney предназначен для монетизации Вашего блога при помощи Adsense, sape.ru, tnx.net и других систем.
-Возможности:
-Размещение ссылок или рекламы до текста страницы, после текста страницы, в виджетах и футере.
-Автоматическая установка плагина и прав на папки sape.ru и tnx.net по желанию.
-Регулировка количества показываемых ссылок в зависимости от места расположения.
-
 
 == Installation ==
 Requirements:
@@ -58,33 +50,6 @@ Html - Enter your html code in the right place
 For activating widget you shall go to a design-> widgets, activate the widget and point its title.
 If define ('WPLANG', 'ru_RU'); in wp-config.php then russian language;
 
-ru
-Установка:
-Скопировать файл iMoney.php в wp-content/plugins/ вордпресса.
-В плагинах активировать iMoney.
-В настройках->iMoney.
-
-Adsense - ввести ваш Adsense id.
-Настройтие размер, позицию и канал блоков рекламы как вы хотите.
-
-Sape - ввести ваш Sape Uid.
-По желанию создать автоматом папку Сапы, совпадающей с вашим Sape Uid.
-Разрешить работу Sape links, указать сколько ссылок использовать до текста, после текста, в виджете и футере.
-Разрешить Sape context.
-Если часто добавляете контент, то контентные ссылки в главной,тегах,категориях могут вылетать в эррор.
-Для предотвращения включите опцию "Show context only on Pages and Posts".
-По мере надобности включить Check - проверочный код.
-
-Tnx/xap - ввести ваш Tnx Uid.
-По желанию создать автоматом папку Сапы, совпадающей с вашим Tnx Uid.
-Разрешить работу Tnx links, указать сколько ссылок использовать до текста, после текста, в виджете и футере.
-По мере надобности включить Check - проверочный код.
-
-Html - Введите ваш html код в нужные места.
-
-Для активации виджетов нужно зайти в дизайн->виджеты, активировать виджет и указать его заголовок.
-Если define ('WPLANG', 'ru_RU'); в wp-config.php, то будет русский язык.
-
 == Frequently Asked Questions ==
 -
 == Screenshots ==
@@ -93,4 +58,6 @@ Html - Введите ваш html код в нужные места.
 -
 == A brief Markdown Example ==
 -
-
+== Changelog ==
+sdfsdf
+fsdfsdf
