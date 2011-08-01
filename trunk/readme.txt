@@ -108,3 +108,6 @@ If define ('WPLANG', 'ru_RU'); in wp-config.php then russian language;
 == Changelog ==
 sdfsdf
 fsdfsdf
+
+== Upgrade Notice ==
+-
