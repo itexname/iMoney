@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.31 (04-07-2011)
+Version: 0.31 (01-08-2011)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -26,14 +26,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-//
-//joomla header
-/**
-* @version 1.5
-* @package iMoney ?
-* @copyright © 2011 iTex
-* @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
-*/
 //if (!defined('_VALID_MOS') && !defined('_JEXEC'))
 //{
 //	echo 'Restricted access';
