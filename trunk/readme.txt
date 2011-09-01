@@ -4,8 +4,8 @@ Donate link: http://itex.name/donation/
 Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense
 Requires at least: 2.3
-Tested up to: 2.6.3
-Stable tag: 0.31
+Tested up to: 3.2
+Stable tag: 0.32
 
 == Description ==
 
@@ -28,7 +28,7 @@ Adjustment of amount of displayed links depending on the location.
 == Installation ==
 
 Requirements:
-Wordpress 2.3-2.6.3
+Wordpress 2.3-3.2
 PHP5, PHP4
 Widget compatible theme, to use the links in widgets.
 
@@ -106,8 +106,6 @@ If define ('WPLANG', 'ru_RU'); in wp-config.php then russian language;
 -
 
 == Changelog ==
-sdfsdf
-fsdfsdf
 
 == Upgrade Notice ==
 -
