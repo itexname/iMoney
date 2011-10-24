@@ -9,8 +9,6 @@ Stable tag: 0.33
 
 == Description ==
 
-en
-
 Plugin iMoney is meant for monetize your blog using Adsense, sape.ru, tnx.net and other systems.
 
 Features:
@@ -31,9 +29,6 @@ Requirements:
 Wordpress 2.3-3.2
 PHP5, PHP4
 Widget compatible theme, to use the links in widgets.
-
-
-en
 
 Copy the file iMoney.php in wp-content/plugins .
 
@@ -91,7 +86,7 @@ If define ('WPLANG', 'ru_RU'); in wp-config.php then russian language;
 
 == Frequently Asked Questions ==
 
--
+Visit the <a href="http://itex.name/plugins/faq-po-imoney-i-isape.html">iMoney FAQ</a> for more information.
 
 == Screenshots ==
 1. screenshot-1.png
@@ -110,26 +105,33 @@ Thanks http://mywordpress.ru/ for the screenshot.
 == Changelog ==
 
 Ru
+
 0.33
 Добавлен параметр принудительного показа кода и ссылок, полезно при кешировании.
 Мелкие правки.
+
 0.31-0.32
 Правки для выполнения требований репозитария wordpress.org. Переписан код, подозрительный для статических анализаторов.
+
 0.30 16-06-2011
 Добавлены прототипы работы с beta.serpzilla.com
 Подправлена работа с sape
 Мелкое переписывание админской части
+
 0.29
 Подправлен код для работы с трастлинк
-Сделано обновление кода трастлинка из плагина
+Сделано обновление кода трастлинка из 
+
 0.28
 Сделаны первые шаги к портированию на джумлу и друпал
 Решена мелкая проблема с token_get_all
+
 0.27
 Решена  мелкая проблема с кодировкой в sape articles
 Добавлен trustlink
 Добавлено поздравление с новым годом
 Обновлен файл sape.php
+
 0.26
 Переделан вывод sape articles учтены проблемы у пользователей.
 Добавлен шаблон sape articles.
@@ -138,16 +140,21 @@ Ru
 Решены проблемы с индексацией при кеше, нужно включать дебуг и чеккоды быдут всегда показаны.
 Локализация переведена на po-mo файлы.
 исправдены мелкие баги.
+
 0.25
 Добавлен Teasernet.
 Заменены ereg на preg_match.
 Добавлено поздравление с 9 Мая.
+
 0.24
 Добавлен Setkinks от Zia
+
 0.23
 Времмено решено с StringReader в WP2.9
+
 0.22
 Решена проблема с StringReader в WP2.8
+
 0.21
 Поправлены мелкие баги с секции мейнлинка
 Добавляен параметр paged в safe_url
