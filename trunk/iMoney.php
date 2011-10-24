@@ -3,7 +3,7 @@
 Plugin Name: iMoney
 Version: 0.33 (25-10-2011)
 Plugin URI: http://itex.name/imoney
-Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
+Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
 Author URI: http://itex.name/
 */
@@ -2211,7 +2211,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			if (isset($_POST['info_update']))
 			{
 				echo '<div style="margin:10px auto; border:3px  #55ff00 solid; background-color:#afa; padding:10px; text-align:center;">
-				<a href="http://itex.name/go.php?http://itex.name/donation">'.$this->__('Create and maintain a plugin take lot\'s of time. If you enjoy this plugin, do a Donation.', 'iMoney').'</div>';
+				<a href="http://itex.name/donation">'.$this->__('Create and maintain a plugin take lot\'s of time. If you enjoy this plugin, do a Donation.', 'iMoney').'</div>';
 			}
 
 			?>		
@@ -2842,7 +2842,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				</p>
 				<?php
 				//if (!$this->get_option('itex_m_sape_sapeuser')) echo $this->__('Enter your SAPE UID in this box!', 'iMoney');
-				if (!$this->get_option('itex_m_sape_sapeuser')) echo '<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">'.$this->__('Enter your SAPE UID in this box.', 'iMoney').'</a>';
+				if (!$this->get_option('itex_m_sape_sapeuser')) echo '<a target="_blank" href="http://www.sape.ru/r.a5a429f57e.php">'.$this->__('Enter your SAPE UID in this box.', 'iMoney').'</a>';
 
 				?>
 		</div>
@@ -2865,7 +2865,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						?>
 						<p style="margin: 5px 10px;"><?php 
 						//echo $this->__('Enter your SAPE UID in this box.', 'iMoney');
-						echo '<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">'.$this->__('Enter your SAPE UID in this box!', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://www.sape.ru/r.a5a429f57e.php">'.$this->__('Enter your SAPE UID in this box!', 'iMoney').'</a>';
 
 						?></p>
 					</td>
@@ -3363,9 +3363,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">www.sape.ru</a>
+						<a target="_blank" href="http://www.sape.ru/r.a5a429f57e.php">www.sape.ru</a>
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php"><img src="http://img.sape.ru/bn/sape_001.gif" alt="www.sape.ru!" border="0" /></a>
+						<a target="_blank" href="http://www.sape.ru/r.a5a429f57e.php"><img src="http://img.sape.ru/bn/sape_001.gif" alt="www.sape.ru!" border="0" /></a>
 					</td>
 				</tr>
 			</table>
@@ -3451,7 +3451,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				<input type='submit' name='itex_m_zilla_dir_create' value='<?php echo $this->__('Create', 'iMoney'); ?>' />
 				</p>
 				<?php
-				if (!$this->get_option('itex_m_zilla_user')) echo '<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/">'.$this->__('Enter your Serpzilla UID in this box.', 'iMoney').'</a>';
+				if (!$this->get_option('itex_m_zilla_user')) echo '<a target="_blank" href="http://beta.serpzilla.com/r/mbaJymKyWl/">'.$this->__('Enter your Serpzilla UID in this box.', 'iMoney').'</a>';
 
 				?>
 		</div>
@@ -3474,7 +3474,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						?>
 						<p style="margin: 5px 10px;"><?php 
 
-						echo '<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/">'.$this->__('Enter your Serpzilla UID in this box!', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://beta.serpzilla.com/r/mbaJymKyWl/">'.$this->__('Enter your Serpzilla UID in this box!', 'iMoney').'</a>';
 
 						?></p>
 					</td>
@@ -3530,9 +3530,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/">www.serpzilla.com</a>
+						<a target="_blank" href="http://beta.serpzilla.com/r/mbaJymKyWl/">www.serpzilla.com</a>
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://beta.serpzilla.com/r/mbaJymKyWl/"><img src="http://img.sape.ru/bn/sape_001.gif" alt="www.sape.ru!" border="0" /></a>
+						<a target="_blank" href="http://beta.serpzilla.com/r/mbaJymKyWl/"><img src="http://img.sape.ru/bn/sape_001.gif" alt="www.sape.ru!" border="0" /></a>
 					</td>
 				</tr>
 			</table>
@@ -3656,7 +3656,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				</p>
 				<?php
 				//if (!$this->get_option('itex_m_trustlink_sapeuser')) echo $this->__('Enter your Trustlink UID in this box!', 'iMoney');
-				if (!$this->get_option('itex_m_trustlink_sapeuser')) echo '<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535">'.$this->__('Enter your Trustlink UID in this box!', 'iMoney').'</a>';
+				if (!$this->get_option('itex_m_trustlink_sapeuser')) echo '<a target="_blank" href="http://trustlink.ru/registration/106535">'.$this->__('Enter your Trustlink UID in this box!', 'iMoney').'</a>';
 
 
 				?>
@@ -3680,7 +3680,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						?>
 						<p style="margin: 5px 10px;"><?php 
 						//echo $this->__('Enter your Trustlink UID in this box.', 'iMoney');
-						echo '<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535">'.$this->__('Enter your Trustlink UID in this box.', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://trustlink.ru/registration/106535">'.$this->__('Enter your Trustlink UID in this box.', 'iMoney').'</a>';
 
 						?></p>
 					</td>
@@ -3795,14 +3795,14 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://fpdownload.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0" width="600" height="90"><param name="movie" value="http://trustlink.ru/banners/secretar_600x90.swf"/><param name="bgcolor" value="#FFFFFF"/><param name="quality" value="high"><param name="allowScriptAccess" value="Always"><param name="FlashVars" value="refLink=http://itex.name/go.php?http://trustlink.ru/registration/106535"><embed type="application/x-shockwave-flash" pluginspage="http://www.adobe.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" width="600" height="90" src="http://trustlink.ru/banners/secretar_600x90.swf" bgcolor="#FFFFFF" quality="high" allowScriptAccess="Always" flashvars="refLink=http://itex.name/go.php?http://trustlink.ru/registration/106535" /></object>
+						<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://fpdownload.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0" width="600" height="90"><param name="movie" value="http://trustlink.ru/banners/secretar_600x90.swf"/><param name="bgcolor" value="#FFFFFF"/><param name="quality" value="high"><param name="allowScriptAccess" value="Always"><param name="FlashVars" value="refLink=http://trustlink.ru/registration/106535"><embed type="application/x-shockwave-flash" pluginspage="http://www.adobe.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" width="600" height="90" src="http://trustlink.ru/banners/secretar_600x90.swf" bgcolor="#FFFFFF" quality="high" allowScriptAccess="Always" flashvars="refLink=http://trustlink.ru/registration/106535" /></object>
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535">www.trustlink.ru</a>
+						<a target="_blank" href="http://trustlink.ru/registration/106535">www.trustlink.ru</a>
 					</td>
 				</tr>
 			</table>
 			<?php
-			//<a target="_blank" href="http://itex.name/go.php?http://trustlink.ru/registration/106535"><img src="http://trustlink.ru/banners/secretar_600x90.swf" alt="www.trustlink.ru!" border="0" /></a>
+			//<a target="_blank" href="http://trustlink.ru/registration/106535"><img src="http://trustlink.ru/banners/secretar_600x90.swf" alt="www.trustlink.ru!" border="0" /></a>
 
 	}
 
@@ -4101,7 +4101,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						?>
 						<p style="margin: 5px 10px;"><?php 
 						//echo $this->__('Enter your Begun auto pad ID in this box (begun_auto_pad).', 'iMoney');
-						echo '<a target="_blank" href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">'.$this->__('Enter your Begun auto pad ID in this box (begun_auto_pad).', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://referal.begun.ru/partner.php?oid=114115214">'.$this->__('Enter your Begun auto pad ID in this box (begun_auto_pad).', 'iMoney').'</a>';
 
 
 						?></p>
@@ -4187,9 +4187,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">begun.ru</a>
+						<a target="_blank" href="http://referal.begun.ru/partner.php?oid=114115214">begun.ru</a>
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">
+						<a target="_blank" href="http://referal.begun.ru/partner.php?oid=114115214">
 							<img src="http://promo.begun.ru/my/data/banners/107_04_partner.gif" alt="Покупаем рекламу. Дорого." border="0" height="60" width="468">
 						</a>
 
@@ -4269,7 +4269,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "value='".$this->get_option('itex_m_adskape_id')."' />\n";
 						?>
 						<p style="margin: 5px 10px;"><?php 
-						echo '<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">'.$this->__('Enter your Adskape site ID in this box.', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://adskape.ru/unireg.php?ref=17729&d=1">'.$this->__('Enter your Adskape site ID in this box.', 'iMoney').'</a>';
 
 						?></p>
 						
@@ -4366,9 +4366,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>
+						<a target="_blank" href="http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">
+						<a target="_blank" href="http://adskape.ru/unireg.php?ref=17729&d=1">
 							<img src="http://adskape.ru/Banners/pr2-1.gif" alt="www.adskape.ru!">
 						</a>
 
@@ -4448,7 +4448,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "value='".$this->get_option('itex_m_teasernet_padid')."' />\n";
 						?>
 						<p style="margin: 5px 10px;"><?php
-						echo '<a target="_blank" href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">'.$this->__('Enter your teasernet site padid in this box.', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://teasernet.com/?owner_id=18516">'.$this->__('Enter your teasernet site padid in this box.', 'iMoney').'</a>';
 						 ?></p>
 						
 						<?php
@@ -4516,9 +4516,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">teasernet.com</a>
+						<a target="_blank" href="http://teasernet.com/?owner_id=18516">teasernet.com</a>
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">
+						<a target="_blank" href="http://teasernet.com/?owner_id=18516">
 						<img src="http://pic5.teasernet.com/tz/2-468_60.gif"></a>
 						
 
@@ -5378,7 +5378,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "value='".$this->get_option('itex_m_tnx_tnxuser')."' />\n";
 						?>
 						<p style="margin: 5px 10px;"><?php 
-						echo '<a target="_blank" href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">'.$this->__('Enter your tnx UID in this box.', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://www.tnx.net/?p=119596309">'.$this->__('Enter your tnx UID in this box.', 'iMoney').'</a>';
 						?></p>
 					</td>
 				</tr>
@@ -5580,9 +5580,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">www.tnx.net</a>
+						<a target="_blank" href="http://www.tnx.net/?p=119596309">www.tnx.net</a>
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.tnx.net/?p=119596309"><img border="0" alt="Sell links on every page of your site to thousands of advertisers!" src="http://us1.tnx.net/tnx_468_60.gif" width="468" height="60"></a>
+						<a target="_blank" href="http://www.tnx.net/?p=119596309"><img border="0" alt="Sell links on every page of your site to thousands of advertisers!" src="http://us1.tnx.net/tnx_468_60.gif" width="468" height="60"></a>
 					</td>
 				</tr>
 			</table>
@@ -5732,7 +5732,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "value='".$this->get_option('itex_m_mainlink_mainlinkuser')."' />\n";
 						?>
 						<p style="margin: 5px 10px;"><?php 
-						echo '<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">'.$this->__('Enter your mainlink UID in this box.', 'iMoney').'</a>';
+						echo '<a target="_blank" target="_blank" href="http://www.mainlink.ru/?partnerid=42851">'.$this->__('Enter your mainlink UID in this box.', 'iMoney').'</a>';
 
 						?></p>
 					</td>
@@ -5922,9 +5922,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">www.mainlink.ru</a>
+						<a target="_blank" target="_blank" href="http://www.mainlink.ru/?partnerid=42851">www.mainlink.ru</a>
 						<br/>
-						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851"><img src='http://www.mainlink.ru/i/banner/partners/468x1.gif' alt="www.mainlink.ru!" border='0'></a>
+						<a target="_blank" target="_blank" href="http://www.mainlink.ru/?partnerid=42851"><img src='http://www.mainlink.ru/i/banner/partners/468x1.gif' alt="www.mainlink.ru!" border='0'></a>
 					</td>
 				</tr>
 			</table>
@@ -6076,7 +6076,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "value='".$this->get_option('itex_m_linkfeed_linkfeeduser')."' />\n";
 						?>
 						<p style="margin: 5px 10px;"><?php 
-						echo '<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">'.$this->__('Enter your linkfeed UID in this box.', 'iMoney').'</a>';
+						echo '<a target="_blank" target="_blank" href="http://www.linkfeed.ru/reg/38317">'.$this->__('Enter your linkfeed UID in this box.', 'iMoney').'</a>';
 						?></p>
 					</td>
 				</tr>
@@ -6265,9 +6265,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">www.linkfeed.ru</a>
+						<a target="_blank" target="_blank" href="http://www.linkfeed.ru/reg/38317">www.linkfeed.ru</a>
 						<br/>
-						<a target="_blank" target="_blank" href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317"><img src="http://www.linkfeed.ru/banners/468x60_linkfeed.gif" alt="www.linkfeed.ru!"></a>
+						<a target="_blank" target="_blank" href="http://www.linkfeed.ru/reg/38317"><img src="http://www.linkfeed.ru/banners/468x60_linkfeed.gif" alt="www.linkfeed.ru!"></a>
 					</td>
 				</tr>
 			</table>
@@ -6422,7 +6422,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						echo "value='".$this->get_option('itex_m_setlinks_setlinksuser')."' />\n";
 						?>
 						<p style="margin: 5px 10px;"><?php 
-						echo '<a target="_blank" href="http://itex.name/go.php?http://www.setlinks.ru/?pid=72567">'.$this->__('Enter your SETLINKS UID in this box.', 'iMoney').'</a>';
+						echo '<a target="_blank" href="http://www.setlinks.ru/?pid=72567">'.$this->__('Enter your SETLINKS UID in this box.', 'iMoney').'</a>';
 
 						?></p>
 					</td>
@@ -6652,9 +6652,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td align="center">
 						<br/><br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.setlinks.ru/?pid=72567">www.setlinks.ru</a> 
+						<a target="_blank" href="http://www.setlinks.ru/?pid=72567">www.setlinks.ru</a> 
 						<br/>
-						<a target="_blank" href="http://itex.name/go.php?http://www.setlinks.ru/?pid=72567"><img src="http://vip.setlinks.ru/images/38.gif" alt="www.setlinks.ru!" border="0" /></a> 
+						<a target="_blank" href="http://www.setlinks.ru/?pid=72567"><img src="http://vip.setlinks.ru/images/38.gif" alt="www.setlinks.ru!" border="0" /></a> 
 					</td>
 				</tr>
 			</table>
