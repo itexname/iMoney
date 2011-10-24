@@ -5,7 +5,7 @@ Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense
 Requires at least: 2.3
 Tested up to: 3.2
-Stable tag: 0.32
+Stable tag: 0.33
 
 == Description ==
 
@@ -94,8 +94,10 @@ If define ('WPLANG', 'ru_RU'); in wp-config.php then russian language;
 -
 
 == Screenshots ==
+1. screenshot-1.png
 
--
+Thanks http://mywordpress.ru/ for the screenshot.
+
 
 == Arbitrary section ==
 

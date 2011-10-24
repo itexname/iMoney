@@ -1,7 +1,7 @@
 <?php
 /*
-Plugin Name: iMoney 
-Version: 0.32 (15-09-2011)
+Plugin Name: iMoney
+Version: 0.33 (25-10-2011)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://itex.name/go.php?http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://itex.name/go.php?http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://itex.name/go.php?http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://itex.name/go.php?http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://itex.name/go.php?http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://itex.name/go.php?http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://itex.name/go.php?http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://itex.name/go.php?http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -109,7 +109,7 @@ Html - Введите ваш html код в нужные места.
 
 class itex_money
 {
-	var $version = '0.32';
+	var $version = '0.33';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -143,7 +143,7 @@ class itex_money
 	var $isape_converted = 1;
 	var $server; //zamena server, v kachestve zashity ot staticheskih analizatorov uyazvimostey
 	var $REQUEST_URI; //zamena REQUEST_URI
-	
+	var $force_show =1; //vsegda pokazyvat cod i ssylki
 	/**
    	* constructor, function __construct()  in php4 not working
    	*
@@ -160,12 +160,15 @@ class itex_money
 		{
 			$this->update_option('itex_m_install_date',time());
 		}
-
+		
+		
 
 		if ($this->wordpress)
 		{
 			if (!function_exists(add_action)) return 0;
-
+			
+			$this->force_show = get_option('itex_m_global_force_show');
+			
 			//if (!get_option('itex_m_isape_converted')) $this->isape_converted = 0; //для совместимомти с isape, через несколько месяцев надо удалить
 			//else $this->isape_converted = 0;
 
@@ -366,28 +369,39 @@ class itex_money
 		$ret = '';
 		for ($i=1;$i<=$c;$i++)
 		{
-			if ($q)
-			{
-				if (count($this->links['a_only']))
-				foreach ($this->links['a_only'] as $k=>$v)
+			if (count($this->links))
+				foreach ($this->links as $k=>$v)
 				{
 					$ret .= $v;
 					//$ret .= $this;
 
-					unset($this->links['a_only'][$k]);
+					unset($this->links[$k]);
 					break;
 				}
-			}
-			else
-			{
-				if (count($this->links['a_text']))
-				foreach ($this->links['a_text'] as $k=>$v)
-				{
-					$ret .= $v;
-					unset($this->links['a_text'][$k]);
-					break;
-				}
-			}
+				
+			
+//			if ($q)
+//			{
+//				if (count($this->links))
+//				foreach ($this->links as $k=>$v)
+//				{
+//					$ret .= $v;
+//					//$ret .= $this;
+//
+//					unset($this->links[$k]);
+//					break;
+//				}
+//			}
+//			else
+//			{
+//				if (count($this->links))
+//				foreach ($this->links as $k=>$v)
+//				{
+//					$ret .= $v;
+//					unset($this->links[$k]);
+//					break;
+//				}
+//			}
 		}
 		return $ret;
 	}
@@ -505,7 +519,9 @@ class itex_money
 
 		$o['charset'] = $this->encoding;
 		//$o['force_show_code'] = $this->force_show_code;
-		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
+		//$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
+		$o['force_show_code'] = $this->force_show; 
+		
 		$o['multi_site'] = true;
 		if ($this->get_option('itex_m_sape_enable'))
 		{
@@ -530,7 +546,7 @@ class itex_money
 				//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->sape->_links_delimiter; // убираем коммент, не повредит дебагу?
 
 				
-				if (strlen($q)) $this->links['a_only'][] = $q.$this->sape->_links_delimiter;
+				if (strlen($q)) $this->links[] = $q.$this->sape->_links_delimiter;
 
 				$q1 = @trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет
 				if (empty($q1) || !strlen($q1))
@@ -541,10 +557,11 @@ class itex_money
 				//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
 				if ($i > 30) break;
 			}
-			if (!count($this->links)) // если нет размещенных ссылок, и включен debugenable добавляем чеккод
+			///if (!count($this->links)) // если нет размещенных ссылок, и включен debugenable добавляем чеккод
+			if ($i<2)
 			{
-				if ($this->get_option('itex_m_global_debugenable'))
-				$this->links['a_only'][] = trim($this->sape->return_links());
+				if ($this->force_show)
+				$this->links[] = trim($this->sape->return_links());
 			}
 			$this->itex_debug('sape links:'.var_export($this->links, true));
 
@@ -580,11 +597,16 @@ class itex_money
 					$this->aftercontent .= '<div>'.$css.$this->itex_m_get_links(intval($this->get_option('itex_m_sape_links_aftercontent'))).'</div>';
 				}
 			}
+			
 			$countsidebar = $this->get_option('itex_m_sape_links_sidebar');
 			$check = $this->get_option('itex_m_global_debugenable')?'<!---check sidebar '.$countsidebar.'-->':'';
+			
+			
+			
 			if ($countsidebar == 'max')
 			{
 				//$this->sidebar = '<div>'.$this->sape->return_links().'</div>';
+				$this->sidebar_links .= '<div>'.$this->itex_m_get_links().'</div>';
 			}
 			elseif ($countsidebar == '0')
 			{
@@ -807,7 +829,7 @@ class itex_money
 			//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->sape->_links_delimiter; // убираем коммент, не повредит дебагу?
 
 			
-			if (strlen($q)) $this->links['a_only'][] = $q.$this->sape->_links_delimiter;
+			if (strlen($q)) $this->links[] = $q.$this->sape->_links_delimiter;
 
 			$q1 = trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет
 			if (empty($q1) || !strlen($q1))
@@ -821,7 +843,7 @@ class itex_money
 		if (!count($this->links)) // если нет размещенных ссылок, и включен debugenable добавляем чеккод
 		{
 			if ($this->get_option('itex_m_global_debugenable'))
-			$this->links['a_only'][] = trim($this->sape->return_links());
+			$this->links[] = trim($this->sape->return_links());
 		}
 		$this->itex_debug('sape links:'.var_export($this->links, true));
 		return 1;
@@ -929,6 +951,7 @@ class itex_money
 		$o['charset'] = $this->encoding;
 		//$o['force_show_code'] = $this->force_show_code;
 		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
+		$o['force_show_code'] = $this->force_show; 
 		$o['multi_site'] = true;
 		if ($this->get_option('itex_m_zilla_enable'))
 		{
@@ -950,7 +973,7 @@ class itex_money
 				//убрал, тк сайт не индексируются возможно из-за этого
 				//if(!preg_match("/^\<\!\-\-/", $q)) $q .= $this->zilla->_links_delimiter; // убираем коммент, не повредит дебагу?
 
-				if (strlen($q)) $this->links['a_only'][] = $q.$this->zilla->_links_delimiter;
+				if (strlen($q)) $this->links[] = $q.$this->zilla->_links_delimiter;
 
 				$q1 = trim(strip_tags($q)); //если нет текста, то и нечего показывать, значит ссылок больше нет, но если что показали чеккод
 				if (empty($q1) || !strlen($q1))
@@ -964,7 +987,7 @@ class itex_money
 			if (!count($this->links)) // если нет размещенных ссылок, и включен debugenable добавляем чеккод
 			{
 				if ($this->get_option('itex_m_global_debugenable'))
-				$this->links['a_only'][] = trim($this->zilla->return_links());
+				$this->links[] = trim($this->zilla->return_links());
 			}
 			$this->itex_debug('zilla links:'.var_export($this->links, true));
 
@@ -1150,6 +1173,7 @@ class itex_money
 
 		$o['charset'] = $this->encoding;
 		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
+		$o['force_show_code'] = $this->force_show; 
 		$o['multi_site'] = true;
 		$o['use_cache'] = true; //кеширование, только для нового кода
 		if ($this->get_option('itex_m_trustlink_enable'))
@@ -1691,11 +1715,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 		$o['charset'] = $this->encoding;
 		$o['multi_site'] = true;
+		
 		if ($this->get_option('itex_m_global_debugenable'))
 		{
 			$o['force_show_code'] = 1;
 			//$o['verbose'] = 1;  //в футере инфу выдаст
 		}
+		$o['force_show_code'] = $this->force_show; 
 		$linkfeed = new LinkfeedClient($o);
 
 		if ($this->get_option('itex_m_linkfeed_enable'))
@@ -1875,7 +1901,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				break;
 			}
 
-			if (strlen($q)) $this->links['a_only'][] = $q;
+			if (strlen($q)) $this->links[] = $q;
 
 			//!!!!!!!!!!check it, tk ne vozvrashaet pustuu stroku
 			if ($i > 30) break;
@@ -2530,6 +2556,19 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				</tr>
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
+						<label for=""><?php echo $this->__('Force_show:', 'iMoney'); ?></label>
+					</th>
+					<td>
+						<?php
+						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+						$d = $this->__('Force show code and link. Use it if cache pages', 'iMoney');
+						$this->itex_m_admin_select('itex_m_global_force_show', $o, $d);
+
+						?>
+					</td>
+				</tr>
+				<tr>
+					<th width="30%" valign="top" style="padding-top: 10px;">
 						<label for=""><?php echo $this->__('Global debug:', 'iMoney'); ?></label>
 					</th>
 					<td>
@@ -2573,6 +2612,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						?>
 					</td>
 				</tr>
+				
+				
+				
 				<tr>
 					<th width="30%" valign="top" style="padding-top: 10px;">
 						<label for=""><?php echo $this->__('Widgets settings:', 'iMoney'); ?></label>
