@@ -4,8 +4,8 @@ Donate link: http://itex.name/donation/
 Author link: http://itex.name/
 Tags: automatic, link, links, seo, widget, sidebar, plugin, google, adsense, tnx, sape, html, php, linkfeed, xap, mainlink, txt, begun, trustlink, adskape
 Requires at least: 2.3
-Tested up to: 3.2
-Stable tag: 0.33
+Tested up to: 3.3.2
+Stable tag: 0.34
 
 == Description ==
 
@@ -26,7 +26,7 @@ Adjustment of amount of displayed links depending on the location.
 == Installation ==
 
 Requirements:
-Wordpress 2.3-3.2
+Wordpress 2.3 or higher
 PHP5, PHP4
 Widget compatible theme, to use the links in widgets.
 
@@ -105,6 +105,9 @@ Thanks http://mywordpress.ru/ for the screenshot.
 == Changelog ==
 
 Ru
+0.34
+Добавлен admitad.com.
+Мелкие правки.
 
 0.33
 Добавлен параметр принудительного показа кода и ссылок, полезно при кешировании.

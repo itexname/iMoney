@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: iMoney
-Version: 0.33 (25-10-2011)
+Version: 0.34 (11-05-2012)
 Plugin URI: http://itex.name/imoney
-Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
+Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://www.admitad.com/ru/promo/?ref=f0fc9a3889">www.admitad.com</a>, <a href="http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
 Author URI: http://itex.name/
 */
@@ -109,7 +109,7 @@ Html - Введите ваш html код в нужные места.
 
 class itex_money
 {
-	var $version = '0.33';
+	var $version = '0.34';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -160,15 +160,15 @@ class itex_money
 		{
 			$this->update_option('itex_m_install_date',time());
 		}
-		
-		
+
+
 
 		if ($this->wordpress)
 		{
 			if (!function_exists(add_action)) return 0;
-			
+
 			$this->force_show = get_option('itex_m_global_force_show');
-			
+
 			//if (!get_option('itex_m_isape_converted')) $this->isape_converted = 0; //для совместимомти с isape, через несколько месяцев надо удалить
 			//else $this->isape_converted = 0;
 
@@ -192,12 +192,12 @@ class itex_money
 			if (!isset($GLOBALS['_MAMBOTS'])) return 0;
 
 			$GLOBALS['_MAMBOTS']->registerFunction('onAfterStart', array(&$this, 'itex_m_init'));
-			
+
 			$GLOBALS['mainframe']->registerEvent('onPrepareContent', array(&$this, 'itex_m_replace'));
 			//что за mainframe ваще и можно ли передавать array вторым параметром
-			
+
 			$GLOBALS['mainframe']->registerEvent('onContentPrepare', array(&$this, 'itex_m_replace')); //для 1.6 джумлы
-			
+
 		}
 		if ($this->bitrix)
 		{
@@ -356,7 +356,6 @@ class itex_money
 	}
 
 	
-
 	/**
    	* get links
    	*
@@ -370,38 +369,38 @@ class itex_money
 		for ($i=1;$i<=$c;$i++)
 		{
 			if (count($this->links))
-				foreach ($this->links as $k=>$v)
-				{
-					$ret .= $v;
-					//$ret .= $this;
+			foreach ($this->links as $k=>$v)
+			{
+				$ret .= $v;
+				//$ret .= $this;
 
-					unset($this->links[$k]);
-					break;
-				}
-				
-			
-//			if ($q)
-//			{
-//				if (count($this->links))
-//				foreach ($this->links as $k=>$v)
-//				{
-//					$ret .= $v;
-//					//$ret .= $this;
-//
-//					unset($this->links[$k]);
-//					break;
-//				}
-//			}
-//			else
-//			{
-//				if (count($this->links))
-//				foreach ($this->links as $k=>$v)
-//				{
-//					$ret .= $v;
-//					unset($this->links[$k]);
-//					break;
-//				}
-//			}
+				unset($this->links[$k]);
+				break;
+			}
+
+
+			//			if ($q)
+			//			{
+			//				if (count($this->links))
+			//				foreach ($this->links as $k=>$v)
+			//				{
+			//					$ret .= $v;
+			//					//$ret .= $this;
+			//
+			//					unset($this->links[$k]);
+			//					break;
+			//				}
+			//			}
+			//			else
+			//			{
+			//				if (count($this->links))
+			//				foreach ($this->links as $k=>$v)
+			//				{
+			//					$ret .= $v;
+			//					unset($this->links[$k]);
+			//					break;
+			//				}
+			//			}
 		}
 		return $ret;
 	}
@@ -423,7 +422,7 @@ class itex_money
 			$last_REQUEST_URI = $this->REQUEST_URI;
 			$this->REQUEST_URI = $this->safeurl;
 		}
-		
+
 		$this->itex_debug('REQUEST_URI = '.$this->REQUEST_URI);
 
 		//moget tnx ne produmali multihosting bag, mb ya mudag pravda)) skorey vsego ta mudag i chtonit kuril, ppc narko kod), pri multi $this->server['DOCUMENT_ROOT'] == "/var/www/default/"
@@ -433,12 +432,13 @@ class itex_money
 			$this->server['DOCUMENT_ROOT'] = $this->document_root;
 		}
 		$this->itex_debug('DOCUMENT_ROOT = '.$this->document_root);
-		
+
 		$this->itex_init_adsense();
 		$this->itex_init_html();
 		$this->itex_init_sape();
 		$this->itex_init_tnx();
 		$this->itex_init_begun();
+		$this->itex_init_admitad();
 		$this->itex_init_ilinks();
 		$this->itex_init_mainlink();
 		$this->itex_init_linkfeed();
@@ -448,7 +448,7 @@ class itex_money
 		$this->itex_init_teasernet();
 		$this->itex_init_trustlink();
 		$this->itex_init_zilla();
-		
+
 		$this->itex_m_widget_init();
 		if (strlen($this->footer))
 		{
@@ -477,13 +477,13 @@ class itex_money
 			$this->REQUEST_URI = $last_REQUEST_URI;
 			unset($last_REQUEST_URI);
 		}
-		
+
 		if (isset($last_DOCUMENT_ROOT)) //zakanchivaem izvrashatsa i privodim vse v poryadok
 		{
 			$this->server['DOCUMENT_ROOT'] = $last_DOCUMENT_ROOT;
 			unset($last_DOCUMENT_ROOT);
 		}
-		
+
 
 		if ( function_exists('memory_get_usage') ) $this->itex_debug("memory start/end/dif ".$this->memory_get_usage.'/'.memory_get_usage().'/'.(memory_get_usage()-$this->memory_get_usage));
 		if ( function_exists('get_num_queries') ) $this->itex_debug("get_num_queries start/end/dif ".intval($this->get_num_queries).'/'.intval(get_num_queries()).'/'.(intval(get_num_queries())-intval($this->get_num_queries)));
@@ -520,8 +520,8 @@ class itex_money
 		$o['charset'] = $this->encoding;
 		//$o['force_show_code'] = $this->force_show_code;
 		//$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
-		$o['force_show_code'] = $this->force_show; 
-		
+		$o['force_show_code'] = $this->force_show;
+
 		$o['multi_site'] = true;
 		if ($this->get_option('itex_m_sape_enable'))
 		{
@@ -597,12 +597,12 @@ class itex_money
 					$this->aftercontent .= '<div>'.$css.$this->itex_m_get_links(intval($this->get_option('itex_m_sape_links_aftercontent'))).'</div>';
 				}
 			}
-			
+
 			$countsidebar = $this->get_option('itex_m_sape_links_sidebar');
 			$check = $this->get_option('itex_m_global_debugenable')?'<!---check sidebar '.$countsidebar.'-->':'';
+
 			
-			
-			
+
 			if ($countsidebar == 'max')
 			{
 				//$this->sidebar = '<div>'.$this->sape->return_links().'</div>';
@@ -641,8 +641,8 @@ class itex_money
 				if  ($countsidebar == 'max') $this->sidebar_links .= $this->itex_m_get_links();
 				else $this->footer .= $this->itex_m_get_links();
 			}
-			
-			
+
+
 			if (strlen($this->sape->_error))$this->itex_debug('sape error:'.var_export($this->sape->_error, true));
 		}
 
@@ -951,7 +951,7 @@ class itex_money
 		$o['charset'] = $this->encoding;
 		//$o['force_show_code'] = $this->force_show_code;
 		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
-		$o['force_show_code'] = $this->force_show; 
+		$o['force_show_code'] = $this->force_show;
 		$o['multi_site'] = true;
 		if ($this->get_option('itex_m_zilla_enable'))
 		{
@@ -1079,7 +1079,7 @@ class itex_money
 		else return 0;
 		$this->itex_debug('TNX_USER = '.$this->get_option('itex_m_tnx_tnxuser'));
 
-		
+
 		//		$dir .= '/..';
 		//		for ($i = 0;$i<10;$i++) $dir .= '/..';
 		//		$dir .= dirname($file).'/';
@@ -1087,7 +1087,7 @@ class itex_money
 		$dir = '/' . 'tnxdir_'.md5($this->get_option('itex_m_tnx_tnxuser')).'/';
 		$this->tnx = new TNX_n($this->get_option('itex_m_tnx_tnxuser'), $dir);
 		$this->tnx->_encoding = $this->encoding;
-		
+
 
 
 		if ($this->get_option('itex_m_tnx_enable'))
@@ -1173,7 +1173,7 @@ class itex_money
 
 		$o['charset'] = $this->encoding;
 		$o['force_show_code'] = 1; // сделал так, тк новые страницы не добавляются
-		$o['force_show_code'] = $this->force_show; 
+		$o['force_show_code'] = $this->force_show;
 		$o['multi_site'] = true;
 		$o['use_cache'] = true; //кеширование, только для нового кода
 		if ($this->get_option('itex_m_trustlink_enable'))
@@ -1397,6 +1397,71 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		}
 		return 1;
 	}
+
+
+	/**
+ 	* admitad init
+ 	*
+ 	* @return  bool
+ 	*/
+	function itex_init_admitad()
+	{
+		if (!$this->get_option('itex_m_admitad_enable')) return 0;
+
+		//if ($this->get_option('itex_m_admitad_id'));
+		//else $this->error .= $this->__('admitad Id not defined<br/>', 'iMoney');
+
+		$maxblock = 4; //max  admitad blocks - 1
+		for ($block=1;$block<$maxblock;$block++)
+		{
+			if ($this->get_option('itex_m_admitad_b'.$block.'_enable'))
+			{
+				$script = '<p><script type="text/javascript">(function() {
+    /* Optional settings (these lines can be removed): */
+    subID = "";  // - local banner key;
+    injectTo = "";  // - #id of html element (ex., "top-banner").
+    /* End settings block */
+
+    if(injectTo=="")injectTo="admitad_shuffle"+subID+Math.round(Math.random()*100000000);
+    if(subID=="")subid_block=""; else subid_block="subid/"+subID+"/";
+    document.write(\'<div id="\'+injectTo+\'"></div>\');
+    var s = document.createElement("script");
+    s.type = "text/javascript"; s.async = true;
+    s.src = "http://www.ad.admitad.com/shuffle/'.$this->get_option('itex_m_admitad_b'.$block.'_id').'/"+subid_block+"?inject_to="+injectTo;
+    var x = document.getElementsByTagName("script")[0];
+    x.parentNode.insertBefore(s, x);
+})();</script></p>';
+				$pos = $this->get_option('itex_m_admitad_b'.$block.'_pos');
+				switch ($pos)
+				{
+					case 'sidebar':
+						{
+							$this->sidebar['iMoney_admitad_'.$block] = $script;
+							break;
+						}
+					case 'footer':
+						{
+							$this->footer .= $script;
+							break;
+						}
+					case 'beforecontent':
+						{
+							$this->beforecontent .= $script;
+							break;
+						}
+					case 'aftercontent':
+						{
+							$this->aftercontent .= $script;
+							break;
+						}
+					default: {}
+				}
+
+			}
+		}
+		return 1;
+	}
+
 
 	/**
    	* adskape init
@@ -1715,13 +1780,13 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 		$o['charset'] = $this->encoding;
 		$o['multi_site'] = true;
-		
+
 		if ($this->get_option('itex_m_global_debugenable'))
 		{
 			$o['force_show_code'] = 1;
 			//$o['verbose'] = 1;  //в футере инфу выдаст
 		}
-		$o['force_show_code'] = $this->force_show; 
+		$o['force_show_code'] = $this->force_show;
 		$linkfeed = new LinkfeedClient($o);
 
 		if ($this->get_option('itex_m_linkfeed_enable'))
@@ -2227,6 +2292,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
         			<li style="display: inline;"><a href="#itex_global" onclick='document.getElementById("itex_global").style.display="";'>Global</a></li>
         			<li style="display: inline;"><a href="#itex_adsense" onclick='document.getElementById("itex_adsense").style.display="";'>Adsense</a></li>
         			<li style="display: inline;"><a href="#itex_begun" onclick='document.getElementById("itex_begun").style.display="";'>Begun</a></li>
+        			<li style="display: inline;"><a href="#itex_admitad" onclick='document.getElementById("itex_admitad").style.display="";'>Admitad</a></li>
         			<li style="display: inline;"><a href="#itex_html" onclick='document.getElementById("itex_html").style.display="";'>Html</a></li>
         			<li style="display: inline;"><a href="#itex_ilinks" onclick='document.getElementById("itex_ilinks").style.display="";'>iLinks</a></li>
         			<li style="display: inline;"><a href="#itex_php" onclick='document.getElementById("itex_php").style.display="";'>Php</a></li>
@@ -2253,6 +2319,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
        	 		
        	 		<h3><a href="#itex_begun" name="itex_begun" onclick='document.getElementById("itex_begun").style.display="";'>Begun</a></h3>
        	 		<div id="itex_begun"><?php $this->itex_m_admin_begun(); ?></div>
+       	 		
+       	 		<h3><a href="#itex_begun" name="itex_admitad" onclick='document.getElementById("itex_admitad").style.display="";'>Admitad</a></h3>
+       	 		<div id="itex_admitad"><?php $this->itex_m_admin_admitad(); ?></div>
        	 		
        	 		<h3><a href="#itex_html" name="itex_html" onclick='document.getElementById("itex_html").style.display="";'>Html</a></h3>
        	 		<div id="itex_html"><?php $this->itex_m_admin_html(); ?></div>
@@ -2299,6 +2368,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
        	 		document.getElementById("itex_sape").style.display="none";
        	 		document.getElementById("itex_tnx").style.display="none";
        	 		document.getElementById("itex_begun").style.display="none";
+       	 		document.getElementById("itex_admitad").style.display="none";
        	 		document.getElementById("itex_mainlink").style.display="none";
        	 		document.getElementById("itex_ilinks").style.display="none";
        	 		document.getElementById("itex_linkfeed").style.display="none";
@@ -2320,6 +2390,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
         			<li style="display: inline;"><a href="#itex_global" onclick='document.getElementById("itex_global").style.display="";'>Global</a></li>
         			<li style="display: inline;"><a href="#itex_adsense" onclick='document.getElementById("itex_adsense").style.display="";'>Adsense</a></li>
         			<li style="display: inline;"><a href="#itex_begun" onclick='document.getElementById("itex_begun").style.display="";'>Begun</a></li>
+        			<li style="display: inline;"><a href="#itex_admitad" onclick='document.getElementById("itex_admitad").style.display="";'>Admitad</a></li>
         			<li style="display: inline;"><a href="#itex_html" onclick='document.getElementById("itex_html").style.display="";'>Html</a></li>
         			<li style="display: inline;"><a href="#itex_ilinks" onclick='document.getElementById("itex_ilinks").style.display="";'>iLinks</a></li>
         			<li style="display: inline;"><a href="#itex_php" onclick='document.getElementById("itex_php").style.display="";'>Php</a></li>
@@ -3079,11 +3150,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 					</th>
 					<td>
 						<?php
-						
+
 						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
 						$d = $this->__('Context', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapecontext_enable', $o, $d);
-						
+
 						/*
 						echo "<select name='sape_sapecontext_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
@@ -3100,11 +3171,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo "<br/>\n";
 						*/
-						
+
 						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
 						$d = $this->__('Show context only on Pages and Posts.', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapecontext_pages_enable', $o, $d);
-						
+
 						/*
 						echo "<select name='sape_sapecontext_pages_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
@@ -3121,7 +3192,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo "<br/>\n";
 						*/
-						
+
 						?>
 					</td>
 				</tr>
@@ -3135,7 +3206,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
 						$d = $this->__('<a href="http://articles.sape.ru/r.a5a429f57e.php">'.$this->__('Articles', 'iMoney').'</a>', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapearticles_enable', $o, $d);
-						
+
 						/*
 						echo "<select name='itex_m_sape_sapearticles_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
@@ -3163,7 +3234,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5');
 						$d = $this->__('Before content links', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapearticles_beforecontent', $o, $d);
-						
+
 						/*
 						echo "<select name='itex_m_sape_sapearticles_beforecontent' id='itex_m_sape_sapearticles_beforecontent'>\n";
 
@@ -3197,11 +3268,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo "<br/>\n";
 						*/
-						
+
 						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5');
 						$d = $this->__('After content links', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapearticles_aftercontent', $o, $d);
-						
+
 
 						/*
 						echo "<select name='itex_m_sape_sapearticles_aftercontent' id='itex_m_sape_sapearticles_aftercontent'>\n";
@@ -3236,11 +3307,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo "<br/>\n";
 						*/
-						
+
 						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5','max' => $this->__('Max', 'iMoney'),);
 						$d = $this->__('Sidebar links', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapearticles_sidebar', $o, $d);
-						
+
 						/*
 
 						echo "<select name='itex_m_sape_sapearticles_sidebar' id='itex_m_sape_sapearticles_sidebar'>\n";
@@ -3279,7 +3350,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo "<br/>\n";
 						*/
-						
+
 						$o = array('0' => $this->__('Disabled', 'iMoney'),'1' => '1','2' => '2','3' => '3','4' => '4','5' => '5','max' => $this->__('Max', 'iMoney'),);
 						$d = $this->__('Footer links', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapearticles_footer', $o, $d);
@@ -3321,11 +3392,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 						echo "<br/>\n";
 						*/
-						
+
 						$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
 						$d = $this->__('Show content links only on Pages and Posts.', 'iMoney');
 						$this->itex_m_admin_select('itex_m_sape_sapearticles_pages_enable', $o, $d);
-						
+
 						/*
 						echo "<select name='itex_m_sape_sapearticles_pages_enable' id='sape_enable'>\n";
 						echo "<option value='1'";
@@ -3379,11 +3450,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
    	*/
 	function itex_m_sape_install_file()
 	{
-				
+
 		$sape_php_content = itex_m_datafiles('sape.php');
-		
-		$file = $this->document_root . '/' . _SAPE_USER . '/sape.php'; 
-		
+
+		$file = $this->document_root . '/' . _SAPE_USER . '/sape.php';
+
 		$dir = dirname($file);
 		if (!@mkdir($dir, 0777))
 		{
@@ -3546,11 +3617,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
    	*/
 	function itex_m_zilla_install_file()
 	{
-		
+
 		$sape_php_content = itex_m_datafiles('zilla.php');
-		
+
 		$file = $this->document_root . '/' . _ZILLA_USER . '/zilla.php';
-		
+
 		$dir = dirname($file);
 		if (!@mkdir($dir, 0777))
 		{
@@ -3815,11 +3886,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	{
 		//http://www.trustlink.ru/user/get_php_code?orientation=0&block_color=ffffff&border_color=e0e0e0e&anchor_color=0000cc&text_color=000000&url_color=006600
 
-		
+
 		$file_php_content = itex_m_datafiles('trustlink.php');
-		
+
 		$file = $this->document_root . '/' . $this->get_option('itex_m_trustlink_user') . '/trustlink.php'; //<< Not working in multihosting.
-			
+
 		$dir = dirname($file);
 		if (!is_dir($dir) && !@mkdir($dir, 0777))
 		{
@@ -3841,9 +3912,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		}
 
 
-		
+
 		$file_php_content = itex_m_datafiles('template.tpl.html');
-		
+
 		$file = $dir.DIRECTORY_SEPARATOR.'template.tpl.html';
 		if (!file_put_contents($file,$file_php_content))
 		{
@@ -4199,6 +4270,147 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			</table>
 			<?php
 	}
+
+	/**
+ 	* admitad section admin menu
+ 	*
+ 	*/
+	function itex_m_admin_admitad()
+	{
+		$maxblock = 4; //max  admitad blocks - 1
+
+    ?>
+<table class="form-table" cellspacing="2" cellpadding="5" width="100%">
+    <tr>
+        <th valign="top" style="padding-top: 10px;">
+            <label for=""><?php echo $this->__('Your admitad ID:', 'iMoney');?></label>
+        </th>
+        <td>
+            <?php
+            $o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+            $d = '<a target="_blank" href="http://www.admitad.com/ru/promo/?ref=f0fc9a3889">'.$this->__('Enter your admitad ID and block positions.', 'iMoney').'</a>';
+            $this->itex_m_admin_select('itex_m_admitad_enable', $o, $d);
+
+
+
+            //            echo "<select name='admitad_enable' id='admitad_enable'>\n";
+            //            echo "<option value='1'";
+            //
+            //            if($this->get_option('itex_m_admitad_enable')) echo " selected='selected'";
+            //            echo ">".$this->__("Enabled", 'iMoney')."</option>\n";
+            //
+            //            echo "<option value='0'";
+            //            if(!$this->get_option('itex_m_admitad_enable')) echo" selected='selected'";
+            //            echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
+            //            echo "</select>\n";
+            //
+            //            echo '<label for="">'.$this->__("Working", 'iMoney').'</label>';
+            //            echo "<br/>\n";
+            ?>
+        </td>
+    </tr>
+    <?php
+    for ($block=1;$block<$maxblock;$block++)
+    {
+        ?>
+
+        <tr>
+            <th width="30%" valign="top" style="padding-top: 10px;">
+                <label for=""><?php echo $this->__('admitad Block ', 'iMoney').$block.': ';?></label>
+            </th>
+            <td>
+                <?php
+                $o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+                $d = $this->__('Block '.$block, 'iMoney');
+                $this->itex_m_admin_select('itex_m_admitad_b'.$block.'_enable', $o, $d);
+
+                //                echo "<select name='admitad_b".$block."_enable' id='admitad_b".$block."_enable'>\n";
+                //                echo "<option value='1'";
+                //
+                //                if($this->get_option('itex_m_admitad_b'.$block.'_enable')) echo " selected='selected'";
+                //                echo ">".$this->__("Enabled", 'iMoney')."</option>\n";
+                //
+                //                echo "<option value='0'";
+                //                if(!$this->get_option('itex_m_admitad_b'.$block.'_enable')) echo" selected='selected'";
+                //                echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
+                //                echo "</select>\n";
+                //
+                //                echo '<label for="">'.$this->__("Working", 'iMoney').'</label>';
+                //                echo "<br/>\n";
+
+
+                //                echo "<select name='admitad_b".$block."_id' id='admitad_b".$block."_id'>\n";
+                //                echo "<option value='0'";
+                //                if(!$this->get_option('itex_m_admitad_b'.$block.'_id')) echo" selected='selected'";
+                //                echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
+                //
+                //                //$size = array('728x90', '468x60', '234x60','120x600', '160x600', '120x240', '336x280', '300x250', '250x250', '200x200', '180x150', '125x125');
+                //                $size = array('1'=> '468×60', '2'=> '100×100', '3'=> 'RICH', '4'=> 'Topline', '5'=> '600×90', '6'=> '120×600', '7'=> '240×400',);
+                //                foreach ( $size as $k=>$v)
+                //                {
+                //                    echo "<option value='".$k."'";
+                //                    if($this->get_option('itex_m_admitad_b'.$block.'_id') == $k) echo " selected='selected'";
+                //                    echo ">".$size[$k]."</option>\n";
+                //                }
+                //                echo "</select>\n";
+                //                echo '<label for="">'.$this->__('Block size ', 'iMoney').'</label>';
+                //                echo "<br/>\n";
+
+                //$o = array('sidebar'=>'sidebar', 'footer'=>'footer', 'beforecontent'=>'beforecontent','aftercontent'=>'aftercontent');
+                $d = $this->__('Block id', 'iMoney');
+                $this->itex_m_admin_input('itex_m_admitad_b'.$block.'_id', $d);
+
+                //$o= array('1' => $this->__('Enabled', 'iMoney'),'0' => $this->__('Disabled', 'iMoney'),);
+                $o = array('sidebar'=>'sidebar', 'footer'=>'footer', 'beforecontent'=>'beforecontent','aftercontent'=>'aftercontent');
+                $d = $this->__('Block position', 'iMoney');
+                $this->itex_m_admin_select('itex_m_admitad_b'.$block.'_pos', $o, $d);
+
+                //                echo "<select name='admitad_b".$block."_pos' id='admitad_b".$block."_pos'>\n";
+                //                echo "<option value='0'";
+                //                if(!$this->get_option('itex_m_admitad_b'.$block.'_pos')) echo" selected='selected'";
+                //                echo ">".$this->__("Disabled", 'iMoney')."</option>\n";
+                //
+                //                $pos = array('sidebar', 'footer', 'beforecontent','aftercontent');
+                //                foreach ( $pos as $k)
+                //                {
+                //                    echo "<option value='".$k."'";
+                //                    if($this->get_option('itex_m_admitad_b'.$block.'_pos') == $k) echo " selected='selected'";
+                //                    echo ">".$k."</option>\n";
+                //                }
+                //                echo "</select>\n";
+                //                echo '<label for="">'.$this->__('Block position', 'iMoney').'</label>';
+                //                echo "<br/>\n";
+
+
+
+                ?>
+            </td>
+
+
+        </tr>
+
+        <?php
+    }
+    ?>
+    <tr>
+        <th width="30%" valign="top" style="padding-top: 10px;">
+            <label for=""></label>
+        </th>
+        <td align="center">
+            <br/><br/>
+            <a target="_blank" href="http://www.admitad.com/ru/promo/?ref=f0fc9a3889">www.admitad.com</a>
+            <br/>
+            <a target="_blank" href="http://www.admitad.com/ru/promo/?ref=f0fc9a3889">
+                <img src="http://www.admitad.com/static/images/site/header/logo.png" alt="www.admitad.com!">
+            </a>
+
+        </td>
+    </tr>
+
+</table>
+<?php
+	}
+
 
 	/**
    	* Adskape section admin menu
@@ -5596,11 +5808,11 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
    	*/
 	function itex_m_tnx_install_file()
 	{
-		
+
 		$tnx_php_content = itex_m_datafiles('tnx.php');
-		
+
 		$file = $this->document_root . '/' .'tnxdir_'.md5($this->get_option('itex_m_tnx_tnxuser')).'/tnx.php';
-		
+
 		$dir = dirname($file);
 		//print_r($file.' '.$dir );die();
 		if (!@mkdir($dir, 0777))
@@ -5940,9 +6152,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	{
 		//if (!defined('SECURE_CODE')) return 0;
 		if (!$this->get_option('itex_m_mainlink_mainlinkuser')) return 0;
-		
+
 		$mainlink_php_content = itex_m_datafiles('ML.php');
-		
+
 		$file = $this->document_root . '/mainlink_'.$this->get_option('itex_m_mainlink_mainlinkuser').'/ML.php';
 		$dir = dirname($file);
 		//print_r($file.' '.$dir );die();
@@ -6283,9 +6495,9 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	{
 		//if (!defined('SECURE_CODE')) return 0;
 		if (!$this->get_option('itex_m_linkfeed_linkfeeduser')) return 0;
-		
+
 		$linkfeed_php_content = itex_m_datafiles('linkfeed.php');
-		
+
 		$file = $this->document_root . '/linkfeed_'.$this->get_option('itex_m_linkfeed_linkfeeduser').'/linkfeed.php';
 		$dir = dirname($file);
 		//print_r($file.' '.$dir );die();
@@ -6661,7 +6873,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 			<?php
 
 	}
-	
+
 	function itex_m_datafiles()
 	{
 		$delimiter_1 = 'itex_imoney_datafiles_delimiter_1';
@@ -6669,7 +6881,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		$data = array();
 		if ($file = file_get_contents('itex_imoney_datafiles.php'))
 		{
-			//	
+			//
 			$file = substr($file,16, strlen($file));
 			$file = explode($delimiter_1,$file);
 			foreach ($file as $v)
@@ -6677,18 +6889,18 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				$v = trim($v);
 				if (empty($v)) continue;
 				$v = explode($delimiter_2,$v,3);
-				}
 			}
-			else return false;
-			if (isset($data[$filename]))
-			{
-				$ret = $data[$filename];
-				return $ret;
-			}
-			return false;
-				
+		}
+		else return false;
+		if (isset($data[$filename]))
+		{
+			$ret = $data[$filename];
+			return $ret;
+		}
+		return false;
+
 	}
-		
+
 }
 
 if (function_exists(add_action)) $itex_money = & new itex_money();
