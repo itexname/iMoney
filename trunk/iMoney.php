@@ -1,7 +1,7 @@
 <?php
 /*
-Plugin Name: iMoney
-Version: 0.34 (11-05-2012)
+Plugin Name: iMoney Summer Edition
+Version: 0.35 (02-06-2012)
 Plugin URI: http://itex.name/imoney
 Description: Adsense, <a href="http://www.sape.ru/r.a5a429f57e.php">Sape.ru</a>, <a href="http://www.tnx.net/?p=119596309">tnx.net/xap.ru</a>, <a href="http://referal.begun.ru/partner.php?oid=114115214">Begun.ru</a>, <a href="http://www.admitad.com/ru/promo/?ref=f0fc9a3889">www.admitad.com</a>, <a href="http://www.mainlink.ru/?partnerid=42851">mainlink.ru</a>, <a href="http://www.linkfeed.ru/reg/38317">linkfeed.ru</a>, <a href="http://adskape.ru/unireg.php?ref=17729&d=1">adskape.ru</a>, <a href="http://teasernet.com/?owner_id=18516">Teasernet.com</a>, <a href="http://trustlink.ru/registration/106535">Trustlink.ru</a>, php exec and html inserts helper.
 Author: Itex
@@ -9,7 +9,7 @@ Author URI: http://itex.name/
 */
 
 /*
-Copyright 2007-2011  Itex (web : http://itex.name/)
+Copyright 2007-2012  Itex (web : http://itex.name/)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -109,7 +109,7 @@ Html - Введите ваш html код в нужные места.
 
 class itex_money
 {
-	var $version = '0.34';
+	var $version = '0.35';
 	var $full = 0;
 	var $error = '';
 	//var $force_show_code = true;
@@ -356,6 +356,7 @@ class itex_money
 	}
 
 	
+
 	/**
    	* get links
    	*
@@ -3451,7 +3452,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	function itex_m_sape_install_file()
 	{
 
-		$sape_php_content = itex_m_datafiles('sape.php');
+		$sape_php_content = $this->itex_m_datafiles('sape.php');
 
 		$file = $this->document_root . '/' . _SAPE_USER . '/sape.php';
 
@@ -3618,7 +3619,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	function itex_m_zilla_install_file()
 	{
 
-		$sape_php_content = itex_m_datafiles('zilla.php');
+		$sape_php_content = $this->itex_m_datafiles('zilla.php');
 
 		$file = $this->document_root . '/' . _ZILLA_USER . '/zilla.php';
 
@@ -3887,7 +3888,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		//http://www.trustlink.ru/user/get_php_code?orientation=0&block_color=ffffff&border_color=e0e0e0e&anchor_color=0000cc&text_color=000000&url_color=006600
 
 
-		$file_php_content = itex_m_datafiles('trustlink.php');
+		$file_php_content = $this->itex_m_datafiles('trustlink.php');
 
 		$file = $this->document_root . '/' . $this->get_option('itex_m_trustlink_user') . '/trustlink.php'; //<< Not working in multihosting.
 
@@ -3913,7 +3914,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 
 
-		$file_php_content = itex_m_datafiles('template.tpl.html');
+		$file_php_content = $this->itex_m_datafiles('template.tpl.html');
 
 		$file = $dir.DIRECTORY_SEPARATOR.'template.tpl.html';
 		if (!file_put_contents($file,$file_php_content))
@@ -4401,7 +4402,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
             <a target="_blank" href="http://www.admitad.com/ru/promo/?ref=f0fc9a3889">www.admitad.com</a>
             <br/>
             <a target="_blank" href="http://www.admitad.com/ru/promo/?ref=f0fc9a3889">
-                <img src="http://www.admitad.com/static/images/site/header/logo.png" alt="www.admitad.com!">
+               
             </a>
 
         </td>
@@ -5809,7 +5810,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 	function itex_m_tnx_install_file()
 	{
 
-		$tnx_php_content = itex_m_datafiles('tnx.php');
+		$tnx_php_content = $this->itex_m_datafiles('tnx.php');
 
 		$file = $this->document_root . '/' .'tnxdir_'.md5($this->get_option('itex_m_tnx_tnxuser')).'/tnx.php';
 
@@ -6153,7 +6154,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		//if (!defined('SECURE_CODE')) return 0;
 		if (!$this->get_option('itex_m_mainlink_mainlinkuser')) return 0;
 
-		$mainlink_php_content = itex_m_datafiles('ML.php');
+		$mainlink_php_content = $this->itex_m_datafiles('ML.php');
 
 		$file = $this->document_root . '/mainlink_'.$this->get_option('itex_m_mainlink_mainlinkuser').'/ML.php';
 		$dir = dirname($file);
@@ -6496,8 +6497,16 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 		//if (!defined('SECURE_CODE')) return 0;
 		if (!$this->get_option('itex_m_linkfeed_linkfeeduser')) return 0;
 
-		$linkfeed_php_content = itex_m_datafiles('linkfeed.php');
-
+		$linkfeed_php_content = $this->itex_m_datafiles('linkfeed.php');
+		if (strlen($linkfeed_php_content)<10)
+		{
+			echo '
+		<div style="margin:10px auto; border:3px #f00 solid; background-color:#fdd; color:#000; padding:10px; text-align:center;">
+				'.$this->__('Can`t read datafile', 'iMoney').'
+		</div>';
+			return 0;
+		}
+		
 		$file = $this->document_root . '/linkfeed_'.$this->get_option('itex_m_linkfeed_linkfeeduser').'/linkfeed.php';
 		$dir = dirname($file);
 		//print_r($file.' '.$dir );die();
@@ -6874,12 +6883,12 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 
 	}
 
-	function itex_m_datafiles()
+	function itex_m_datafiles($filename)
 	{
 		$delimiter_1 = 'itex_imoney_datafiles_delimiter_1';
 		$delimiter_2 = 'itex_imoney_datafiles_delimiter_2';
 		$data = array();
-		if ($file = file_get_contents('itex_imoney_datafiles.php'))
+		if ($file = file_get_contents(dirname(__FILE__).DIRECTORY_SEPARATOR.'itex_imoney_datafiles.php'))
 		{
 			//
 			$file = substr($file,16, strlen($file));
@@ -6889,6 +6898,7 @@ var begun_auto_pad = '.$this->get_option('itex_m_begun_id').';var begun_block_id
 				$v = trim($v);
 				if (empty($v)) continue;
 				$v = explode($delimiter_2,$v,3);
+				$data[$v[1]] = $v[2];
 			}
 		}
 		else return false;

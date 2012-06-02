@@ -105,6 +105,9 @@ Thanks http://mywordpress.ru/ for the screenshot.
 == Changelog ==
 
 Ru
+0.35
+исправлен баг добавления кода для бирж
+
 0.34
 Добавлен admitad.com.
 Мелкие правки.
