@@ -1,436 +1,465 @@
 <?php die();?>
 п»їfile sape.php from sape.ru (v1.0.8 02.09.2010) 27.12.2010itex_imoney_datafiles_delimiter_2sape.phpitex_imoney_datafiles_delimiter_2<?php
-/*
- * SAPE.ru -- Интеллектуальная система купли-продажи ссылок
- *
- * PHP-клиент, версия 1.0.8 от 02.09.2010
- *
- * По всем вопросам обращайтесь на support@sape.ru
- *
- * Вебмастеры! Не нужно ничего менять в этом файле! Все настройки - через параметры при вызове кода.
- * Читайте: http://help.sape.ru/
- *
- */
-
-// Основной класс, выполняющий всю рутину
-class SAPE_base {
-
-    var $_version = '1.0.8';
-
-    var $_verbose = false;
-
-    var $_charset = ''; // http://www.php.net/manual/en/function.iconv.php
-
-    var $_sape_charset = '';
-
-    var $_server_list = array('dispenser-01.sape.ru', 'dispenser-02.sape.ru');
-
-    var $_cache_lifetime = 3600; // Пожалейте наш сервер :о)
-
-    // Если скачать базу ссылок не удалось, то следующая попытка будет через столько секунд
-    var $_cache_reloadtime = 600;
-
-    var $_error = '';
-
-    var $_host = '';
-
-    var $_request_uri = '';
-
-    var $_multi_site = false;
-
-    var $_fetch_remote_type = ''; // Способ подключения к удалённому серверу [file_get_contents|curl|socket]
-
-    var $_socket_timeout = 6; // Сколько ждать ответа
-
-    var $_force_show_code = false;
-
-    var $_is_our_bot = false; // Если наш робот
-
-    var $_debug = false;
-
-    var $_ignore_case = false; // Регистронезависимый режим работы, использовать только на свой страх и риск
-
-    var $_db_file = ''; // Путь к файлу с данными
-
-    var $_use_server_array = false; // Откуда будем брать uri страницы: $_SERVER['REQUEST_URI'] или getenv('REQUEST_URI')
-
-    var $_force_update_db = false;
-
-    function SAPE_base($options = null) {
-
-        // Поехали :o)
-
-        $host = '';
-
-        if (is_array($options)) {
-            if (isset($options['host'])) {
-                $host = $options['host'];
-            }
-        } elseif (strlen($options)) {
-            $host = $options;
-            $options = array();
-        } else {
-            $options = array();
-        }
-
-        if (isset($options['use_server_array']) && $options['use_server_array'] == true) {
-            $this->_use_server_array = true;
-        }
-
-        // Какой сайт?
-        if (strlen($host)) {
-            $this->_host = $host;
-        } else {
-            $this->_host = $_SERVER['HTTP_HOST'];
-        }
-
-        $this->_host = preg_replace('/^http:\/\//', '', $this->_host);
-        $this->_host = preg_replace('/^www\./', '', $this->_host);
-
-        // Какая страница?
-        if (isset($options['request_uri']) && strlen($options['request_uri'])) {
-            $this->_request_uri = $options['request_uri'];
-        } elseif ($this->_use_server_array === false) {
-            $this->_request_uri = getenv('REQUEST_URI');
-        }
-
-        if (strlen($this->_request_uri) == 0) {
-            $this->_request_uri = $_SERVER['REQUEST_URI'];
-        }
-
-        // На случай, если хочется много сайтов в одной папке
-        if (isset($options['multi_site']) && $options['multi_site'] == true) {
-            $this->_multi_site = true;
-        }
-
-        // Выводить информацию о дебаге
-        if (isset($options['debug']) && $options['debug'] == true) {
-            $this->_debug = true;
-        }
-
-        // Определяем наш ли робот
-        if (isset($_COOKIE['sape_cookie']) && ($_COOKIE['sape_cookie'] == _SAPE_USER)) {
-            $this->_is_our_bot = true;
-            if (isset($_COOKIE['sape_debug']) && ($_COOKIE['sape_debug'] == 1)) {
-                $this->_debug = true;
-                //для удобства дебега саппортом
-                $this->_options = $options;
-                $this->_server_request_uri = $this->_request_uri = $_SERVER['REQUEST_URI'];
-                $this->_getenv_request_uri = getenv('REQUEST_URI');
-                $this->_SAPE_USER = _SAPE_USER;
-            }
-            if (isset($_COOKIE['sape_updatedb']) && ($_COOKIE['sape_updatedb'] == 1)) {
-                $this->_force_update_db = true;
-            }
-        } else {
-            $this->_is_our_bot = false;
-        }
-
-        // Сообщать об ошибках
-        if (isset($options['verbose']) && $options['verbose'] == true || $this->_debug) {
-            $this->_verbose = true;
-        }
-
-        // Кодировка
-        if (isset($options['charset']) && strlen($options['charset'])) {
-            $this->_charset = $options['charset'];
-        } else {
-            $this->_charset = 'windows-1251';
-        }
-
-        if (isset($options['fetch_remote_type']) && strlen($options['fetch_remote_type'])) {
-            $this->_fetch_remote_type = $options['fetch_remote_type'];
-        }
-
-        if (isset($options['socket_timeout']) && is_numeric($options['socket_timeout']) && $options['socket_timeout'] > 0) {
-            $this->_socket_timeout = $options['socket_timeout'];
-        }
-
-        // Всегда выводить чек-код
-        if (isset($options['force_show_code']) && $options['force_show_code'] == true) {
-            $this->_force_show_code = true;
-        }
-
-        if (!defined('_SAPE_USER')) {
-            return $this->raise_error('Не задана константа _SAPE_USER');
-        }
-
-        //Не обращаем внимания на регистр ссылок
-        if (isset($options['ignore_case']) && $options['ignore_case'] == true) {
-            $this->_ignore_case = true;
-            $this->_request_uri = strtolower($this->_request_uri);
-        }
-    }
-
-    /*
-     * Функция для подключения к удалённому серверу
+    /**
+     * SAPE.ru - РРЅС‚РµР»Р»РµРєС‚СѓР°Р»СЊРЅР°СЏ СЃРёСЃС‚РµРјР° РєСѓРїР»Рё-РїСЂРѕРґР°Р¶Рё СЃСЃС‹Р»РѕРє
+     *
+     * PHP-РєР»РёРµРЅС‚
+     *
+     * Р’РµР±РјР°СЃС‚РµСЂС‹! РќРµ РЅСѓР¶РЅРѕ РЅРёС‡РµРіРѕ РјРµРЅСЏС‚СЊ РІ СЌС‚РѕРј С„Р°Р№Р»Рµ!
+     * Р’СЃРµ РЅР°СЃС‚СЂРѕР№РєРё - С‡РµСЂРµР· РїР°СЂР°РјРµС‚СЂС‹ РїСЂРё РІС‹Р·РѕРІРµ РєРѕРґР°.
+     * Р§РёС‚Р°Р№С‚Рµ: http://help.sape.ru/
+     *
+     * РџРѕ РІСЃРµРј РІРѕРїСЂРѕСЃР°Рј РѕР±СЂР°С‰Р°Р№С‚РµСЃСЊ РЅР° support@sape.ru
+     *
+     * class SAPE_base 				- Р±Р°Р·РѕРІС‹Р№ РєР»Р°СЃСЃ
+     * class SAPE_client 			- РєР»Р°СЃСЃ РґР»СЏ РІС‹РІРѕРґР° РѕР±С‹С‡РЅС‹С… СЃСЃС‹Р»РѕРє
+     * class SAPE_client_context 	- РєР»Р°СЃСЃ РґР»СЏ РІС‹РІРѕРґР° РєРѕРЅС‚РµРєСЃС‚РЅС‹С… СЃСЃСЃС‹Р»РѕРє
+     * class SAPE_articles 			- РєР»Р°СЃСЃ РґР»СЏ РІС‹РІРѕРґР° СЃС‚Р°С‚РµР№
+     *
+     * @version 1.1.6 РѕС‚ 27.01.2012
      */
-    function fetch_remote_file($host, $path) {
 
-        $user_agent = $this->_user_agent . ' ' . $this->_version;
+    /**
+     * РћСЃРЅРѕРІРЅРѕР№ РєР»Р°СЃСЃ, РІС‹РїРѕР»РЅСЏСЋС‰РёР№ РІСЃСЋ СЂСѓС‚РёРЅСѓ
+     */
+    class SAPE_base {
 
-        @ini_set('allow_url_fopen', 1);
-        @ini_set('default_socket_timeout', $this->_socket_timeout);
-        @ini_set('user_agent', $user_agent);
-        if (
+        var $_version = '1.1.6';
+
+        var $_verbose = false;
+
+        var $_charset = ''; // http://www.php.net/manual/en/function.iconv.php
+
+        var $_sape_charset = '';
+
+        var $_server_list = array('dispenser-01.sape.ru', 'dispenser-02.sape.ru');
+
+        var $_cache_lifetime = 3600; // РџРѕР¶Р°Р»РµР№С‚Рµ РЅР°С€ СЃРµСЂРІРµСЂ :Рѕ)
+
+        // Р•СЃР»Рё СЃРєР°С‡Р°С‚СЊ Р±Р°Р·Сѓ СЃСЃС‹Р»РѕРє РЅРµ СѓРґР°Р»РѕСЃСЊ, С‚Рѕ СЃР»РµРґСѓСЋС‰Р°СЏ РїРѕРїС‹С‚РєР° Р±СѓРґРµС‚ С‡РµСЂРµР· СЃС‚РѕР»СЊРєРѕ СЃРµРєСѓРЅРґ
+        var $_cache_reloadtime = 600;
+
+        var $_error = '';
+
+        var $_host = '';
+
+        var $_request_uri = '';
+
+        var $_multi_site = false;
+
+        var $_fetch_remote_type = ''; // РЎРїРѕСЃРѕР± РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє СѓРґР°Р»С‘РЅРЅРѕРјСѓ СЃРµСЂРІРµСЂСѓ [file_get_contents|curl|socket]
+
+        var $_socket_timeout = 6; // РЎРєРѕР»СЊРєРѕ Р¶РґР°С‚СЊ РѕС‚РІРµС‚Р°
+
+        var $_force_show_code = false;
+
+        var $_is_our_bot = false; // Р•СЃР»Рё РЅР°С€ СЂРѕР±РѕС‚
+
+        var $_debug = false;
+
+        var $_ignore_case = false; // Р РµРіРёСЃС‚СЂРѕРЅРµР·Р°РІРёСЃРёРјС‹Р№ СЂРµР¶РёРј СЂР°Р±РѕС‚С‹, РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ С‚РѕР»СЊРєРѕ РЅР° СЃРІРѕР№ СЃС‚СЂР°С… Рё СЂРёСЃРє
+
+        var $_db_file = ''; // РџСѓС‚СЊ Рє С„Р°Р№Р»Сѓ СЃ РґР°РЅРЅС‹РјРё
+
+        var $_use_server_array = false; // РћС‚РєСѓРґР° Р±СѓРґРµРј Р±СЂР°С‚СЊ uri СЃС‚СЂР°РЅРёС†С‹: $_SERVER['REQUEST_URI'] РёР»Рё getenv('REQUEST_URI')
+
+        var $_force_update_db = false;
+
+        var $_is_block_css_showed = false; // Р¤Р»Р°Рі РґР»СЏ РѕС‚СЂРёСЃРѕРІРєРё css РІ Р±Р»РѕС‡РЅС‹С… СЃСЃС‹Р»РєР°С…
+
+        var $_is_block_ins_beforeall_showed = false;
+
+        function SAPE_base($options = null) {
+
+            // РџРѕРµС…Р°Р»Рё :o)
+
+            $host = '';
+
+            if (is_array($options)) {
+                if (isset($options['host'])) {
+                    $host = $options['host'];
+                }
+            } elseif (strlen($options)) {
+                $host = $options;
+                $options = array();
+            } else {
+                $options = array();
+            }
+
+            if (isset($options['use_server_array']) && $options['use_server_array'] == true) {
+                $this->_use_server_array = true;
+            }
+
+            // РљР°РєРѕР№ СЃР°Р№С‚?
+            if (strlen($host)) {
+                $this->_host = $host;
+            } else {
+                $this->_host = $_SERVER['HTTP_HOST'];
+            }
+
+            $this->_host = preg_replace('/^http:\/\//', '', $this->_host);
+            $this->_host = preg_replace('/^www\./', '', $this->_host);
+
+            // РљР°РєР°СЏ СЃС‚СЂР°РЅРёС†Р°?
+            if (isset($options['request_uri']) && strlen($options['request_uri'])) {
+                $this->_request_uri = $options['request_uri'];
+            } elseif ($this->_use_server_array === false) {
+                $this->_request_uri = getenv('REQUEST_URI');
+            }
+
+            if (strlen($this->_request_uri) == 0) {
+                $this->_request_uri = $_SERVER['REQUEST_URI'];
+            }
+
+            // РќР° СЃР»СѓС‡Р°Р№, РµСЃР»Рё С…РѕС‡РµС‚СЃСЏ РјРЅРѕРіРѕ СЃР°Р№С‚РѕРІ РІ РѕРґРЅРѕР№ РїР°РїРєРµ
+            if (isset($options['multi_site']) && $options['multi_site'] == true) {
+                $this->_multi_site = true;
+            }
+
+            // Р’С‹РІРѕРґРёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РґРµР±Р°РіРµ
+            if (isset($options['debug']) && $options['debug'] == true) {
+                $this->_debug = true;
+            }
+
+            // РћРїСЂРµРґРµР»СЏРµРј РЅР°С€ Р»Рё СЂРѕР±РѕС‚
+            if (isset($_COOKIE['sape_cookie']) && ($_COOKIE['sape_cookie'] == _SAPE_USER)) {
+                $this->_is_our_bot = true;
+                if (isset($_COOKIE['sape_debug']) && ($_COOKIE['sape_debug'] == 1)) {
+                    $this->_debug = true;
+                    //РґР»СЏ СѓРґРѕР±СЃС‚РІР° РґРµР±РµРіР° СЃР°РїРїРѕСЂС‚РѕРј
+                    $this->_options = $options;
+                    $this->_server_request_uri = $this->_request_uri = $_SERVER['REQUEST_URI'];
+                    $this->_getenv_request_uri = getenv('REQUEST_URI');
+                    $this->_SAPE_USER = _SAPE_USER;
+                }
+                if (isset($_COOKIE['sape_updatedb']) && ($_COOKIE['sape_updatedb'] == 1)) {
+                    $this->_force_update_db = true;
+                }
+            } else {
+                $this->_is_our_bot = false;
+            }
+
+            // РЎРѕРѕР±С‰Р°С‚СЊ РѕР± РѕС€РёР±РєР°С…
+            if (isset($options['verbose']) && $options['verbose'] == true || $this->_debug) {
+                $this->_verbose = true;
+            }
+
+            // РљРѕРґРёСЂРѕРІРєР°
+            if (isset($options['charset']) && strlen($options['charset'])) {
+                $this->_charset = $options['charset'];
+            } else {
+                $this->_charset = 'windows-1251';
+            }
+
+            if (isset($options['fetch_remote_type']) && strlen($options['fetch_remote_type'])) {
+                $this->_fetch_remote_type = $options['fetch_remote_type'];
+            }
+
+            if (isset($options['socket_timeout']) && is_numeric($options['socket_timeout']) && $options['socket_timeout'] > 0) {
+                $this->_socket_timeout = $options['socket_timeout'];
+            }
+
+            // Р’СЃРµРіРґР° РІС‹РІРѕРґРёС‚СЊ С‡РµРє-РєРѕРґ
+            if (isset($options['force_show_code']) && $options['force_show_code'] == true) {
+                $this->_force_show_code = true;
+            }
+
+            if (!defined('_SAPE_USER')) {
+                return $this->raise_error('РќРµ Р·Р°РґР°РЅР° РєРѕРЅСЃС‚Р°РЅС‚Р° _SAPE_USER');
+            }
+
+            //РќРµ РѕР±СЂР°С‰Р°РµРј РІРЅРёРјР°РЅРёСЏ РЅР° СЂРµРіРёСЃС‚СЂ СЃСЃС‹Р»РѕРє
+            if (isset($options['ignore_case']) && $options['ignore_case'] == true) {
+                $this->_ignore_case = true;
+                $this->_request_uri = strtolower($this->_request_uri);
+            }
+        }
+
+        /**
+         * Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє СѓРґР°Р»С‘РЅРЅРѕРјСѓ СЃРµСЂРІРµСЂСѓ
+         */
+        function fetch_remote_file($host, $path, $specifyCharset = false) {
+
+            $user_agent = $this->_user_agent . ' ' . $this->_version;
+
+            @ini_set('allow_url_fopen', 1);
+            @ini_set('default_socket_timeout', $this->_socket_timeout);
+            @ini_set('user_agent', $user_agent);
+            if (
                 $this->_fetch_remote_type == 'file_get_contents'
                 ||
                 (
-                        $this->_fetch_remote_type == ''
-                        &&
-                        function_exists('file_get_contents')
-                        &&
-                        ini_get('allow_url_fopen') == 1
+                    $this->_fetch_remote_type == ''
+                    &&
+                    function_exists('file_get_contents')
+                    &&
+                    ini_get('allow_url_fopen') == 1
                 )
-        ) {
-            $this->_fetch_remote_type = 'file_get_contents';
-            if ($data = @file_get_contents('http://' . $host . $path)) {
-                return $data;
-            }
+            ) {
+                $this->_fetch_remote_type = 'file_get_contents';
 
-        } elseif (
+                if($specifyCharset && function_exists('stream_context_create')) {
+                    $opts = array(
+                        'http' => array(
+                            'method' => 'GET',
+                            'header' => 'Accept-Charset: '. $this->_charset. "\r\n"
+                        )
+                    );
+                    $context = @stream_context_create($opts);
+                    if ($data = @file_get_contents('http://' . $host . $path, null, $context)) {
+                        return $data;
+                    }
+                } else {
+                    if ($data = @file_get_contents('http://' . $host . $path)) {
+                        return $data;
+                    }
+                }
+
+            } elseif (
                 $this->_fetch_remote_type == 'curl'
                 ||
                 (
-                        $this->_fetch_remote_type == ''
-                        &&
-                        function_exists('curl_init')
+                    $this->_fetch_remote_type == ''
+                    &&
+                    function_exists('curl_init')
                 )
-        ) {
-            $this->_fetch_remote_type = 'curl';
-            if ($ch = @curl_init()) {
+            ) {
+                $this->_fetch_remote_type = 'curl';
+                if ($ch = @curl_init()) {
 
-                @curl_setopt($ch, CURLOPT_URL, 'http://' . $host . $path);
-                @curl_setopt($ch, CURLOPT_HEADER, false);
-                @curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->_socket_timeout);
-                @curl_setopt($ch, CURLOPT_USERAGENT, $user_agent);
+                    @curl_setopt($ch, CURLOPT_URL, 'http://' . $host . $path);
+                    @curl_setopt($ch, CURLOPT_HEADER, false);
+                    @curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->_socket_timeout);
+                    @curl_setopt($ch, CURLOPT_USERAGENT, $user_agent);
+                    if($specifyCharset) {
+                        @curl_setopt($ch, CURLOPT_HTTPHEADER, array('Accept-Charset: '. $this->_charset));
+                    }
 
-                if ($data = @curl_exec($ch)) {
-                    return $data;
+                    $data = @curl_exec($ch);
+                    @curl_close($ch);
+
+                    if ($data) {
+                        return $data;
+                    }
                 }
 
-                @curl_close($ch);
-            }
-
-        } else {
-            $this->_fetch_remote_type = 'socket';
-            $buff = '';
-            $fp = @fsockopen($host, 80, $errno, $errstr, $this->_socket_timeout);
-            if ($fp) {
-                @fputs($fp, "GET {$path} HTTP/1.0\r\nHost: {$host}\r\n");
-                @fputs($fp, "User-Agent: {$user_agent}\r\n\r\n");
-                while (!@feof($fp)) {
-                    $buff .= @fgets($fp, 128);
-                }
-                @fclose($fp);
-
-                $page = explode("\r\n\r\n", $buff);
-
-                return $page[1];
-            }
-
-        }
-
-        return $this->raise_error('Не могу подключиться к серверу: ' . $host . $path . ', type: ' . $this->_fetch_remote_type);
-    }
-
-    /*
-     * Функция чтения из локального файла
-     */
-    function _read($filename) {
-
-        $fp = @fopen($filename, 'rb');
-        @flock($fp, LOCK_SH);
-        if ($fp) {
-            clearstatcache();
-            $length = @filesize($filename);
-            $mqr = @get_magic_quotes_runtime();
-            @set_magic_quotes_runtime(0);
-            if ($length) {
-                $data = @fread($fp, $length);
             } else {
-                $data = '';
-            }
-            @set_magic_quotes_runtime($mqr);
-            @flock($fp, LOCK_UN);
-            @fclose($fp);
+                $this->_fetch_remote_type = 'socket';
+                $buff = '';
+                $fp = @fsockopen($host, 80, $errno, $errstr, $this->_socket_timeout);
+                if ($fp) {
+                    @fputs($fp, "GET {$path} HTTP/1.0\r\nHost: {$host}\r\n");
+                    if($specifyCharset) {
+                        @fputs($fp, "Accept-Charset: {$this->_charset}\r\n");
+                    }
+                    @fputs($fp, "User-Agent: {$user_agent}\r\n\r\n");
+                    while (!@feof($fp)) {
+                        $buff .= @fgets($fp, 128);
+                    }
+                    @fclose($fp);
 
-            return $data;
+                    $page = explode("\r\n\r\n", $buff);
+                    unset($page[0]);
+                    return implode("\r\n\r\n", $page);
+                }
+
+            }
+
+            return $this->raise_error('РќРµ РјРѕРіСѓ РїРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє СЃРµСЂРІРµСЂСѓ: ' . $host . $path . ', type: ' . $this->_fetch_remote_type);
         }
 
-        return $this->raise_error('Не могу считать данные из файла: ' . $filename);
-    }
+        /**
+         * Р¤СѓРЅРєС†РёСЏ С‡С‚РµРЅРёСЏ РёР· Р»РѕРєР°Р»СЊРЅРѕРіРѕ С„Р°Р№Р»Р°
+         */
+        function _read($filename) {
 
-    /*
-     * Функция записи в локальный файл
-     */
-    function _write($filename, $data) {
-
-        $fp = @fopen($filename, 'ab');
-        if ($fp) {
-            if (flock($fp, LOCK_EX | LOCK_NB)) {
-                $length = strlen($data);
-                ftruncate($fp, 0);
-                @fwrite($fp, $data, $length);
+            $fp = @fopen($filename, 'rb');
+            @flock($fp, LOCK_SH);
+            if ($fp) {
+                clearstatcache();
+                $length = @filesize($filename);
+                $mqr = @get_magic_quotes_runtime();
+                @set_magic_quotes_runtime(0);
+                if ($length) {
+                    $data = @fread($fp, $length);
+                } else {
+                    $data = '';
+                }
+                @set_magic_quotes_runtime($mqr);
                 @flock($fp, LOCK_UN);
                 @fclose($fp);
 
-                if (md5($this->_read($filename)) != md5($data)) {
-                    @unlink($filename);
-                    return $this->raise_error('Нарушена целостность данных при записи в файл: ' . $filename);
+                return $data;
+            }
+
+            return $this->raise_error('РќРµ РјРѕРіСѓ СЃС‡РёС‚Р°С‚СЊ РґР°РЅРЅС‹Рµ РёР· С„Р°Р№Р»Р°: ' . $filename);
+        }
+
+        /**
+         * Р¤СѓРЅРєС†РёСЏ Р·Р°РїРёСЃРё РІ Р»РѕРєР°Р»СЊРЅС‹Р№ С„Р°Р№Р»
+         */
+        function _write($filename, $data) {
+
+            $fp = @fopen($filename, 'ab');
+            if ($fp) {
+                if (flock($fp, LOCK_EX | LOCK_NB)) {
+                    ftruncate($fp, 0);
+                    $mqr = @get_magic_quotes_runtime();
+                    @set_magic_quotes_runtime(0);
+                    @fwrite($fp, $data);
+                    @set_magic_quotes_runtime($mqr);
+                    @flock($fp, LOCK_UN);
+                    @fclose($fp);
+
+                    if (md5($this->_read($filename)) != md5($data)) {
+                        @unlink($filename);
+                        return $this->raise_error('РќР°СЂСѓС€РµРЅР° С†РµР»РѕСЃС‚РЅРѕСЃС‚СЊ РґР°РЅРЅС‹С… РїСЂРё Р·Р°РїРёСЃРё РІ С„Р°Р№Р»: ' . $filename);
+                    }
+                } else {
+                    return false;
                 }
-            } else {
-                return false;
+
+                return true;
             }
 
-            return true;
+            return $this->raise_error('РќРµ РјРѕРіСѓ Р·Р°РїРёСЃР°С‚СЊ РґР°РЅРЅС‹Рµ РІ С„Р°Р№Р»: ' . $filename);
         }
 
-        return $this->raise_error('Не могу записать данные в файл: ' . $filename);
-    }
+        /**
+         * Р¤СѓРЅРєС†РёСЏ РѕР±СЂР°Р±РѕС‚РєРё РѕС€РёР±РѕРє
+         */
+        function raise_error($e) {
 
-    /*
-     * Функция обработки ошибок
-     */
-    function raise_error($e) {
+            $this->_error = '<p style="color: red; font-weight: bold;">SAPE ERROR: ' . $e . '</p>';
 
-        $this->_error = '<p style="color: red; font-weight: bold;">SAPE ERROR: ' . $e . '</p>';
-
-        if ($this->_verbose == true) {
-            print $this->_error;
-        }
-
-        return false;
-    }
-
-    function load_data() {
-        $this->_db_file = $this->_get_db_file();
-
-        if (!is_file($this->_db_file)) {
-            // Пытаемся создать файл.
-            if (@touch($this->_db_file)) {
-                @chmod($this->_db_file, 0666); // Права доступа
-            } else {
-                return $this->raise_error('Нет файла ' . $this->_db_file . '. Создать не удалось. Выставите права 777 на папку.');
+            if ($this->_verbose == true) {
+                print $this->_error;
             }
+
+            return false;
         }
 
-        if (!is_writable($this->_db_file)) {
-            return $this->raise_error('Нет доступа на запись к файлу: ' . $this->_db_file . '! Выставите права 777 на папку.');
-        }
+        /**
+         * Р—Р°РіСЂСѓР·РєР° РґР°РЅРЅС‹С…
+         */
+        function load_data() {
+            $this->_db_file = $this->_get_db_file();
 
-        @clearstatcache();
+            if (!is_file($this->_db_file)) {
+                // РџС‹С‚Р°РµРјСЃСЏ СЃРѕР·РґР°С‚СЊ С„Р°Р№Р».
+                if (@touch($this->_db_file)) {
+                    @chmod($this->_db_file, 0666); // РџСЂР°РІР° РґРѕСЃС‚СѓРїР°
+                } else {
+                    return $this->raise_error('РќРµС‚ С„Р°Р№Р»Р° ' . $this->_db_file . '. РЎРѕР·РґР°С‚СЊ РЅРµ СѓРґР°Р»РѕСЃСЊ. Р’С‹СЃС‚Р°РІРёС‚Рµ РїСЂР°РІР° 777 РЅР° РїР°РїРєСѓ.');
+                }
+            }
 
-        $data = $this->_read($this->_db_file);
-        if (
+            if (!is_writable($this->_db_file)) {
+                return $this->raise_error('РќРµС‚ РґРѕСЃС‚СѓРїР° РЅР° Р·Р°РїРёСЃСЊ Рє С„Р°Р№Р»Сѓ: ' . $this->_db_file . '! Р’С‹СЃС‚Р°РІРёС‚Рµ РїСЂР°РІР° 777 РЅР° РїР°РїРєСѓ.');
+            }
+
+            @clearstatcache();
+
+            $data = $this->_read($this->_db_file);
+            if (
                 $this->_force_update_db
                 || (
-                        !$this->_is_our_bot
-                        &&
-                        (
-                                filemtime($this->_db_file) < (time() - $this->_cache_lifetime)
-                                ||
-                                filesize($this->_db_file) == 0
-                                ||
-                                @unserialize($data) == false
-                        )
+                    !$this->_is_our_bot
+                    &&
+                    (
+                        filemtime($this->_db_file) < (time() - $this->_cache_lifetime)
+                        ||
+                        filesize($this->_db_file) == 0
+                        ||
+                        @unserialize($data) == false
+                    )
                 )
-        ) {
-            // Чтобы не повесить площадку клиента и чтобы не было одновременных запросов
-            @touch($this->_db_file, (time() - $this->_cache_lifetime + $this->_cache_reloadtime));
+            ) {
+                // Р§С‚РѕР±С‹ РЅРµ РїРѕРІРµСЃРёС‚СЊ РїР»РѕС‰Р°РґРєСѓ РєР»РёРµРЅС‚Р° Рё С‡С‚РѕР±С‹ РЅРµ Р±С‹Р»Рѕ РѕРґРЅРѕРІСЂРµРјРµРЅРЅС‹С… Р·Р°РїСЂРѕСЃРѕРІ
+                @touch($this->_db_file, (time() - $this->_cache_lifetime + $this->_cache_reloadtime));
 
-            $path = $this->_get_dispenser_path();
-            if (strlen($this->_charset)) {
-                $path .= '&charset=' . $this->_charset;
-            }
+                $path = $this->_get_dispenser_path();
+                if (strlen($this->_charset)) {
+                    $path .= '&charset=' . $this->_charset;
+                }
 
-            foreach ($this->_server_list as $i => $server) {
-                if ($data = $this->fetch_remote_file($server, $path)) {
-                    if (substr($data, 0, 12) == 'FATAL ERROR:') {
-                        $this->raise_error($data);
-                    } else {
-                        // [псевдо]проверка целостности:
-                        $hash = @unserialize($data);
-                        if ($hash != false) {
-                            // попытаемся записать кодировку в кеш
-                            $hash['__sape_charset__'] = $this->_charset;
-                            $hash['__last_update__'] = time();
-                            $hash['__multi_site__'] = $this->_multi_site;
-                            $hash['__fetch_remote_type__'] = $this->_fetch_remote_type;
-                            $hash['__ignore_case__'] = $this->_ignore_case;
-                            $hash['__php_version__'] = phpversion();
-                            $hash['__server_software__'] = $_SERVER['SERVER_SOFTWARE'];
+                foreach ($this->_server_list as $i => $server) {
+                    if ($data = $this->fetch_remote_file($server, $path)) {
+                        if (substr($data, 0, 12) == 'FATAL ERROR:') {
+                            $this->raise_error($data);
+                        } else {
+                            // [РїСЃРµРІРґРѕ]РїСЂРѕРІРµСЂРєР° С†РµР»РѕСЃС‚РЅРѕСЃС‚Рё:
+                            $hash = @unserialize($data);
+                            if ($hash != false) {
+                                // РїРѕРїС‹С‚Р°РµРјСЃСЏ Р·Р°РїРёСЃР°С‚СЊ РєРѕРґРёСЂРѕРІРєСѓ РІ РєРµС€
+                                $hash['__sape_charset__'] = $this->_charset;
+                                $hash['__last_update__'] = time();
+                                $hash['__multi_site__'] = $this->_multi_site;
+                                $hash['__fetch_remote_type__'] = $this->_fetch_remote_type;
+                                $hash['__ignore_case__'] = $this->_ignore_case;
+                                $hash['__php_version__'] = phpversion();
+                                $hash['__server_software__'] = $_SERVER['SERVER_SOFTWARE'];
 
-                            $data_new = @serialize($hash);
-                            if ($data_new) {
-                                $data = $data_new;
+                                $data_new = @serialize($hash);
+                                if ($data_new) {
+                                    $data = $data_new;
+                                }
+
+                                $this->_write($this->_db_file, $data);
+                                break;
                             }
-
-                            $this->_write($this->_db_file, $data);
-                            break;
                         }
                     }
                 }
             }
+
+            // РЈР±РёРІР°РµРј PHPSESSID
+            if (strlen(session_id())) {
+                $session = session_name() . '=' . session_id();
+                $this->_request_uri = str_replace(array('?' . $session, '&' . $session), '', $this->_request_uri);
+            }
+
+            $this->set_data(@unserialize($data));
         }
-
-        // Убиваем PHPSESSID
-        if (strlen(session_id())) {
-            $session = session_name() . '=' . session_id();
-            $this->_request_uri = str_replace(array('?' . $session, '&' . $session), '', $this->_request_uri);
-        }
-
-        $this->set_data(@unserialize($data));
-    }
-}
-
-class SAPE_client extends SAPE_base {
-
-    var $_links_delimiter = '';
-    var $_links = array();
-    var $_links_page = array();
-    var $_user_agent = 'SAPE_Client PHP';
-
-    function SAPE_client($options = null) {
-        parent::SAPE_base($options);
-        $this->load_data();
     }
 
-    /*
-     * Ccылки можно показывать по частям
+    /**
+     * РљР»Р°СЃСЃ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РѕР±С‹С‡РЅС‹РјРё СЃСЃС‹Р»РєР°РјРё
      */
-    function return_links($n = null, $offset = 0) {
+    class SAPE_client extends SAPE_base {
 
-        if (is_array($this->_links_page)) {
+        var $_links_delimiter = '';
+        var $_links = array();
+        var $_links_page = array();
+        var $_user_agent = 'SAPE_Client PHP';
 
-            $total_page_links = count($this->_links_page);
+        function SAPE_client($options = null) {
+            parent::SAPE_base($options);
+            $this->load_data();
+        }
 
-            if (!is_numeric($n) || $n > $total_page_links) {
-                $n = $total_page_links;
+        /**
+         * РћР±СЂР°Р±РѕС‚РєР° html РґР»СЏ РјР°СЃСЃРёРІР° СЃСЃС‹Р»РѕРє
+         *
+         * @param string $html
+         * @return string
+         */
+        function _return_array_links_html($html, $options = null) {
+
+            if(empty($options)) {
+                $options = array();
             }
 
-            $links = array();
-
-            for ($i = 1; $i <= $n; $i++) {
-                if ($offset > 0 && $i <= $offset) {
-                    array_shift($this->_links_page);
-                } else {
-                    $links[] = array_shift($this->_links_page);
-                }
-            }
-
-            $html = join($this->_links_delimiter, $links);
-
-            // если запрошена определенная кодировка, и известна кодировка кеша, и они разные, конвертируем в заданную
+            // РµСЃР»Рё Р·Р°РїСЂРѕС€РµРЅР° РѕРїСЂРµРґРµР»РµРЅРЅР°СЏ РєРѕРґРёСЂРѕРІРєР°, Рё РёР·РІРµСЃС‚РЅР° РєРѕРґРёСЂРѕРІРєР° РєРµС€Р°, Рё РѕРЅРё СЂР°Р·РЅС‹Рµ, РєРѕРЅРІРµСЂС‚РёСЂСѓРµРј РІ Р·Р°РґР°РЅРЅСѓСЋ
             if (
-                    strlen($this->_charset) > 0
-                    &&
-                    strlen($this->_sape_charset) > 0
-                    &&
-                    $this->_sape_charset != $this->_charset
-                    &&
-                    function_exists('iconv')
+                strlen($this->_charset) > 0
+                &&
+                strlen($this->_sape_charset) > 0
+                &&
+                $this->_sape_charset != $this->_charset
+                &&
+                function_exists('iconv')
             ) {
                 $new_html = @iconv($this->_sape_charset, $this->_charset, $html);
                 if ($new_html) {
@@ -439,352 +468,1197 @@ class SAPE_client extends SAPE_base {
             }
 
             if ($this->_is_our_bot) {
+
                 $html = '<sape_noindex>' . $html . '</sape_noindex>';
-            }
-        } else {
-            $html = $this->_links_page;
-        }
 
-        if ($this->_debug) {
-            $html .= print_r($this, true);
-        }
+                if(isset($options['is_block_links']) && true == $options['is_block_links']) {
 
-        return $html;
-    }
+                    if(!isset($options['nof_links_requested'])) {
+                        $options['nof_links_requested'] = 0;
+                    }
+                    if(!isset($options['nof_links_displayed'])) {
+                        $options['nof_links_displayed'] = 0;
+                    }
+                    if(!isset($options['nof_obligatory'])) {
+                        $options['nof_obligatory'] = 0;
+                    }
+                    if(!isset($options['nof_conditional'])) {
+                        $options['nof_conditional'] = 0;
+                    }
 
-    function _get_db_file() {
-        if ($this->_multi_site) {
-            return dirname(__FILE__) . '/' . $this->_host . '.links.db';
-        } else {
-            return dirname(__FILE__) . '/links.db';
-        }
-    }
-
-    function _get_dispenser_path() {
-        return '/code.php?user=' . _SAPE_USER . '&host=' . $this->_host;
-    }
-
-    function set_data($data) {
-        if ($this->_ignore_case) {
-            $this->_links = array_change_key_case($data);
-        } else {
-            $this->_links = $data;
-        }
-        if (isset($this->_links['__sape_delimiter__'])) {
-            $this->_links_delimiter = $this->_links['__sape_delimiter__'];
-        }
-        // определяем кодировку кеша
-        if (isset($this->_links['__sape_charset__'])) {
-            $this->_sape_charset = $this->_links['__sape_charset__'];
-        } else {
-            $this->_sape_charset = '';
-        }
-        if (@array_key_exists($this->_request_uri, $this->_links) && is_array($this->_links[$this->_request_uri])) {
-            $this->_links_page = $this->_links[$this->_request_uri];
-        } else {
-            if (isset($this->_links['__sape_new_url__']) && strlen($this->_links['__sape_new_url__'])) {
-                if ($this->_is_our_bot || $this->_force_show_code) {
-                    $this->_links_page = $this->_links['__sape_new_url__'];
+                    $html = '<sape_block nof_req="' . $options['nof_links_requested'] .
+                        '" nof_displ="' . $options['nof_links_displayed'] .
+                        '" nof_oblig="' . $options['nof_obligatory'] .
+                        '" nof_cond="' . $options['nof_conditional'] .
+                        '">' . $html .
+                        '</sape_block>';
                 }
             }
+
+            return $html;
         }
-    }
-}
 
+        /**
+         * Р¤РёРЅР°Р»СЊРЅР°СЏ РѕР±СЂР°Р±РѕС‚РєР° html РїРµСЂРµРґ РІС‹РІРѕРґРѕРј СЃСЃС‹Р»РѕРє
+         *
+         * @param string $html
+         * @return string
+         */
+        function _return_html($html) {
 
-class SAPE_context extends SAPE_base {
-
-    var $_words = array();
-    var $_words_page = array();
-    var $_user_agent = 'SAPE_Context PHP';
-    var $_filter_tags = array('a', 'textarea', 'select', 'script', 'style', 'label', 'noscript', 'noindex', 'button');
-
-    function SAPE_context($options = null) {
-        parent::SAPE_base($options);
-        $this->load_data();
-    }
-
-    /*
-     * Замена слов в куске текста и обрамляет его тегами sape_index
-     *
-     */
-
-    function replace_in_text_segment($text) {
-        $debug = '';
-        if ($this->_debug) {
-            $debug .= "<!-- argument for replace_in_text_segment: \r\n" . base64_encode($text) . "\r\n -->";
-        }
-        if (count($this->_words_page) > 0) {
-
-            $source_sentence = array();
             if ($this->_debug) {
-                $debug .= '<!-- sentences for replace: ';
+                $html .= print_r($this, true);
             }
-            //Создаем массив исходных текстов для замены
-            foreach ($this->_words_page as $n => $sentence) {
-                //Заменяем все сущности на символы
-                $special_chars = array(
-                    '&amp;' => '&',
-                    '&quot;' => '"',
-                    '&#039;' => '\'',
-                    '&lt;' => '<',
-                    '&gt;' => '>'
-                );
-                $sentence = strip_tags($sentence);
-                foreach ($special_chars as $from => $to) {
-                    str_replace($from, $to, $sentence);
+
+            return $html;
+        }
+
+        /**
+         * Р’С‹РІРѕРґ СЃСЃС‹Р»РѕРє РІ РІРёРґРµ Р±Р»РѕРєР°
+         *
+         * @param int $n РљРѕР»РёС‡РµСЃС‚РІРѕРІРѕ
+         * @param int $offset РЎРјРµС‰РµРЅРёРµ
+         * @param array $options РћРїС†РёРё
+         *
+         * <code>
+         * $options = array();
+         * $options['block_no_css'] = (false|true);
+         * // РџРµСЂРµРѕРїСЂРµРґРµР»СЏРµС‚ Р·Р°РїСЂРµС‚ РЅР° РІС‹РІРѕРґ css РІ РєРѕРґРµ СЃС‚СЂР°РЅРёС†С‹: false - РІС‹РІРѕРґРёС‚СЊ css
+         * $options['block_orientation'] = (1|0);
+         * // РџРµСЂРµРѕРїСЂРµРґРµР»СЏРµС‚ РѕСЂРёРµРЅС‚Р°С†РёСЋ Р±Р»РѕРєР°: 1 - РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅР°СЏ, 0 - РІРµСЂС‚РёРєР°Р»СЊРЅР°СЏ
+         * $options['block_width'] = ('auto'|'[?]px'|'[?]%'|'[?]');
+         * // РџРµСЂРµРѕРїСЂРµРґРµР»СЏРµС‚ С€РёСЂРёРЅСѓ Р±Р»РѕРєР°:
+         * // 'auto'  - РѕРїСЂРµРґРµР»СЏРµС‚СЃСЏ С€РёСЂРёРЅРѕР№ Р±Р»РѕРєР°-РїСЂРµРґРєР° СЃ С„РёРєСЃРёСЂРѕРІР°РЅРЅРѕР№ С€РёСЂРёРЅРѕР№,
+         * // РµСЃР»Рё С‚Р°РєРѕРІРѕРіРѕ РЅРµС‚, С‚Рѕ Р·Р°Р№РјРµС‚ РІСЃСЋ С€РёСЂРёРЅСѓ
+         * // '[?]px' - Р·РЅР°С‡РµРЅРёРµ РІ РїРёРєСЃРµР»СЏС…
+         * // '[?]%'  - Р·РЅР°С‡РµРЅРёРµ РІ РїСЂРѕС†РµРЅС‚Р°С… РѕС‚ С€РёСЂРёРЅС‹ Р±Р»РѕРєР°-РїСЂРµРґРєР° СЃ С„РёРєСЃРёСЂРѕРІР°РЅРЅРѕР№ С€РёСЂРёРЅРѕР№
+         * // '[?]'   - Р»СЋР±РѕРµ РґСЂСѓРіРѕРµ Р·РЅР°С‡РµРЅРёРµ, РєРѕС‚РѕСЂРѕРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ СЃРїРµС†РёС„РёРєР°С†РёРµР№ CSS
+         * </code>
+         *
+         * @return string
+         */
+        function return_block_links($n = null, $offset = 0, $options = null) {
+
+            // РћР±СЉРµРґРёРЅРёС‚СЊ РїР°СЂР°РјРµС‚СЂС‹
+            if(empty($options)) {
+                $options = array();
+            }
+
+            $defaults = array();
+            $defaults['block_no_css'] 		= false;
+            $defaults['block_orientation'] 	= 1;
+            $defaults['block_width'] 		= '';
+
+            $ext_options = array();
+            if(isset($this->_block_tpl_options) && is_array($this->_block_tpl_options)) {
+                $ext_options = $this->_block_tpl_options;
+            }
+
+            $options = array_merge($defaults, $ext_options, $options);
+
+            // РЎСЃС‹Р»РєРё РїРµСЂРµРґР°РЅС‹ РЅРµ РјР°СЃСЃРёРІРѕРј (С‡РµРє-РєРѕРґ) => РІС‹РІРѕРґРёРј РєР°Рє РµСЃС‚СЊ + РёРЅС„Рѕ Рѕ Р±Р»РѕРєРµ
+            if (!is_array($this->_links_page)) {
+                $html = $this->_return_array_links_html('', array('is_block_links' => true));
+                return $this->_return_html($this->_links_page . $html);
+            }
+            // РќРµ РїРµСЂРµРґР°РЅС‹ С€Р°Р±Р»РѕРЅС‹ => РЅРµР»СЊР·СЏ РІС‹РІРµСЃС‚Рё Р±Р»РѕРєРѕРј - РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°С‚СЊ
+            elseif(!isset($this->_block_tpl)) {
+                return $this->_return_html('');
+            }
+
+            // РћРїСЂРµРґРµР»РёРј РЅСѓР¶РЅРѕРµ С‡РёСЃР»Рѕ СЌР»РµРјРµРЅС‚РѕРІ РІ Р±Р»РѕРєРµ
+
+            $total_page_links = count($this->_links_page);
+
+            $need_show_obligatory_block = false;
+            $need_show_conditional_block = false;
+            $n_requested = 0;
+
+            if(isset($this->_block_ins_itemobligatory)) {
+                $need_show_obligatory_block = true;
+            }
+
+            if(is_numeric($n) && $n >= $total_page_links) {
+
+                $n_requested = $n;
+
+                if(isset($this->_block_ins_itemconditional)) {
+                    $need_show_conditional_block = true;
                 }
-                //Преобразуем все спец символы в сущности
-                $sentence = htmlspecialchars($sentence);
-                //Квотируем
-                $sentence = preg_quote($sentence, '/');
-                $replace_array = array();
-                if (preg_match_all('/(&[#a-zA-Z0-9]{2,6};)/isU', $sentence, $out)) {
-                    for ($i = 0; $i < count($out[1]); $i++) {
-                        $unspec = $special_chars[$out[1][$i]];
-                        $real = $out[1][$i];
-                        $replace_array[$unspec] = $real;
+            }
+
+            if (!is_numeric($n) || $n > $total_page_links) {
+                $n = $total_page_links;
+            }
+
+            // Р’С‹Р±РѕСЂРєР° СЃСЃС‹Р»РѕРє
+            $links = array();
+            for ($i = 1; $i <= $n; $i++) {
+                if ($offset > 0 && $i <= $offset) {
+                    array_shift($this->_links_page);
+                } else {
+                    $links[] = array_shift($this->_links_page);
+                }
+            }
+
+            $html = '';
+
+            // РџРѕРґСЃС‡РµС‚ С‡РёСЃР»Р° РѕРїС†РёРѕРЅР°Р»СЊРЅС‹С… Р±Р»РѕРєРѕРІ
+            $nof_conditional = 0;
+            if(count($links) < $n_requested && true == $need_show_conditional_block) {
+                $nof_conditional = $n_requested - count($links);
+            }
+
+            //Р•СЃР»Рё РЅРµС‚ СЃСЃС‹Р»РѕРє Рё РЅРµС‚ РІСЃС‚Р°РІРЅС‹С… Р±Р»РѕРєРѕРІ, С‚Рѕ РЅРёС‡РµРіРѕ РЅРµ РІС‹РІРѕРґРёРј
+            if(empty($links) && $need_show_obligatory_block == false && $nof_conditional == 0) {
+
+                $return_links_options = array(
+                    'is_block_links' 		=> true,
+                    'nof_links_requested' 	=> $n_requested,
+                    'nof_links_displayed'	=> 0,
+                    'nof_obligatory'		=> 0,
+                    'nof_conditional'		=> 0
+                );
+
+                $html = $this->_return_array_links_html($html, $return_links_options);
+
+                return $this->_return_html($html);
+            }
+
+            // Р”РµР»Р°РµРј РІС‹РІРѕРґ СЃС‚РёР»РµР№, С‚РѕР»СЊРєРѕ РѕРґРёРЅ СЂР°Р·. РР»Рё РЅРµ РІС‹РІРѕРґРёРј РёС… РІРѕРѕР±С‰Рµ, РµСЃР»Рё С‚Р°Рє Р·Р°РґР°РЅРѕ РІ РїР°СЂР°РјРµС‚СЂР°С…
+            if (!$this->_is_block_css_showed && false == $options['block_no_css']) {
+                $html .= $this->_block_tpl['css'];
+                $this->_is_block_css_showed = true;
+            }
+
+            // Р’СЃС‚Р°РІРЅРѕР№ Р±Р»РѕРє РІ РЅР°С‡Р°Р»Рµ РІСЃРµС… Р±Р»РѕРєРѕРІ
+            if (isset($this->_block_ins_beforeall) && !$this->_is_block_ins_beforeall_showed){
+                $html .= $this->_block_ins_beforeall;
+                $this->_is_block_ins_beforeall_showed = true;
+            }
+
+            // Р’СЃС‚Р°РІРЅРѕР№ Р±Р»РѕРє РІ РЅР°С‡Р°Р»Рµ Р±Р»РѕРєР°
+            if (isset($this->_block_ins_beforeblock)){
+                $html .= $this->_block_ins_beforeblock;
+            }
+
+            // РџРѕР»СѓС‡Р°РµРј С€Р°Р±Р»РѕРЅС‹ РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ РѕСЂРёРµРЅС‚Р°С†РёРё Р±Р»РѕРєР°
+            $block_tpl_parts = $this->_block_tpl[$options['block_orientation']];
+
+            $block_tpl 			= $block_tpl_parts['block'];
+            $item_tpl 			= $block_tpl_parts['item'];
+            $item_container_tpl = $block_tpl_parts['item_container'];
+            $item_tpl_full 		= str_replace('{item}', $item_tpl, $item_container_tpl);
+            $items 				= '';
+
+            $nof_items_total = count($links);
+            foreach ($links as $link){
+
+                preg_match('#<a href="(https?://([^"/]+)[^"]*)"[^>]*>[\s]*([^<]+)</a>#i', $link, $link_item);
+
+                if (function_exists('mb_strtoupper') && strlen($this->_sape_charset) > 0) {
+                    $header_rest = mb_substr($link_item[3], 1, mb_strlen($link_item[3], $this->_sape_charset) - 1, $this->_sape_charset);
+                    $header_first_letter = mb_strtoupper(mb_substr($link_item[3], 0, 1, $this->_sape_charset), $this->_sape_charset);
+                    $link_item[3] = $header_first_letter . $header_rest;
+                } elseif(function_exists('ucfirst') && (strlen($this->_sape_charset) == 0 || strpos($this->_sape_charset, '1251') !== false) ) {
+                    $link_item[3][0] = ucfirst($link_item[3][0]);
+                }
+
+                // Р•СЃР»Рё РµСЃС‚СЊ СЂР°СЃРєРѕРґРёСЂРѕРІР°РЅРЅС‹Р№ URL, С‚Рѕ Р·Р°РјРµРЅРёС‚СЊ РµРіРѕ РїСЂРё РІС‹РІРѕРґРµ
+
+                if(isset($this->_block_uri_idna) && isset($this->_block_uri_idna[$link_item[2]])) {
+                    $link_item[2] = $this->_block_uri_idna[$link_item[2]];
+                }
+
+                $item = $item_tpl_full;
+                $item = str_replace('{header}', $link_item[3], $item);
+                $item = str_replace('{text}', trim($link), $item);
+                $item = str_replace('{url}', $link_item[2], $item);
+                $item = str_replace('{link}', $link_item[1], $item);
+                $items .= $item;
+            }
+
+            // Р’СЃС‚Р°РІРЅРѕР№ РѕР±СЏР·Р°С‚Р»СЊРЅС‹Р№ СЌР»РµРјРµРЅС‚ РІ Р±Р»РѕРєРµ
+            if(true == $need_show_obligatory_block) {
+                $items .= str_replace('{item}', $this->_block_ins_itemobligatory, $item_container_tpl);
+                $nof_items_total += 1;
+            }
+
+            // Р’СЃС‚Р°РІРЅС‹Рµ РѕРїС†РёРѕРЅР°Р»СЊРЅС‹Рµ СЌР»РµРјРµРЅС‚С‹ РІ Р±Р»РѕРєРµ
+            if($need_show_conditional_block == true && $nof_conditional > 0) {
+                for($i = 0; $i < $nof_conditional; $i++) {
+                    $items .= str_replace('{item}', $this->_block_ins_itemconditional, $item_container_tpl);
+                }
+                $nof_items_total += $nof_conditional;
+            }
+
+            if ($items != ''){
+                $html .= str_replace('{items}', $items, $block_tpl);
+
+                // РџСЂРѕСЃС‚Р°РІР»СЏРµРј С€РёСЂРёРЅСѓ, С‡С‚РѕР±С‹ РІРµР·РґРµ РѕРґРёРЅРєРѕРІР°СЏ Р±С‹Р»Р°
+                if ($nof_items_total > 0){
+                    $html = str_replace('{td_width}', round(100/$nof_items_total), $html);
+                } else {
+                    $html = str_replace('{td_width}', 0, $html);
+                }
+
+                // Р•СЃР»Рё Р·Р°РґР°РЅРѕ, С‚Рѕ РїРµСЂРµРѕРїСЂРµРґРµР»РёС‚СЊ С€РёСЂРёРЅСѓ Р±Р»РѕРєР°
+                if(isset($options['block_width']) && !empty($options['block_width'])) {
+                    $html = str_replace('{block_style_custom}', 'style="width: ' . $options['block_width'] . '!important;"', $html);
+                }
+            }
+
+            unset($block_tpl_parts, $block_tpl, $items, $item, $item_tpl, $item_container_tpl);
+
+            // Р’СЃС‚Р°РІРЅРѕР№ Р±Р»РѕРє РІ РєРѕРЅС†Рµ Р±Р»РѕРєР°
+            if (isset($this->_block_ins_afterblock)){
+                $html .= $this->_block_ins_afterblock;
+            }
+
+            //Р—Р°РїРѕР»РЅСЏРµРј РѕСЃС‚Р°РІС€РёРµСЃСЏ РјРѕРґРёС„РёРєР°С‚РѕСЂС‹ Р·РЅР°С‡РµРЅРёСЏРјРё
+            unset($options['block_no_css'], $options['block_orientation'], $options['block_width']);
+
+            $tpl_modifiers = array_keys($options);
+            foreach($tpl_modifiers as $k=>$m) {
+                $tpl_modifiers[$k] = '{' . $m . '}';
+            }
+            unset($m, $k);
+
+            $tpl_modifiers_values =  array_values($options);
+
+            $html = str_replace($tpl_modifiers, $tpl_modifiers_values, $html);
+            unset($tpl_modifiers, $tpl_modifiers_values);
+
+            //РћС‡РёС‰Р°РµРј РЅРµР·Р°РїРѕР»РЅРµРЅРЅС‹Рµ РјРѕРґРёС„РёРєР°С‚РѕСЂС‹
+            $clear_modifiers_regexp = '#\{[a-z\d_\-]+\}#';
+            $html = preg_replace($clear_modifiers_regexp, ' ', $html);
+
+            $return_links_options = array(
+                'is_block_links' 		=> true,
+                'nof_links_requested' 	=> $n_requested,
+                'nof_links_displayed'	=> $n,
+                'nof_obligatory'		=> ($need_show_obligatory_block == true ? 1 : 0),
+                'nof_conditional'		=> $nof_conditional
+            );
+
+            $html = $this->_return_array_links_html($html, $return_links_options);
+
+            return $this->_return_html($html);
+        }
+
+        /**
+         * Р’С‹РІРѕРґ СЃСЃС‹Р»РѕРє РІ РѕР±С‹С‡РЅРѕРј РІРёРґРµ - С‚РµРєСЃС‚ СЃ СЂР°Р·РґРµР»РёС‚РµР»РµРј
+         *
+         * @param int $n РљРѕР»РёС‡РµСЃС‚РІРѕРІРѕ
+         * @param int $offset РЎРјРµС‰РµРЅРёРµ
+         * @param array $options РћРїС†РёРё
+         *
+         * <code>
+         * $options = array();
+         * $options['as_block'] = (false|true);
+         * // РџРѕРєР°Р·С‹РІР°С‚СЊ Р»Рё СЃСЃС‹Р»РєРё РІ РІРёРґРµ Р±Р»РѕРєР°
+         * </code>
+         *
+         * @see return_block_links()
+         * @return string
+         */
+        function return_links($n = null, $offset = 0, $options = null) {
+
+            //РћРїСЂРµР»РµР»РёС‚СЊ, РєР°Рє РІС‹РІРѕРґРёС‚СЊ СЃСЃС‹Р»РєРё
+            $as_block = $this->_show_only_block;
+
+            if(is_array($options) && isset($options['as_block']) && false == $as_block) {
+                $as_block = $options['as_block'];
+            }
+
+            if(true == $as_block && isset($this->_block_tpl)) {
+                return $this->return_block_links($n, $offset, $options);
+            }
+
+            //-------
+
+            if (is_array($this->_links_page)) {
+
+                $total_page_links = count($this->_links_page);
+
+                if (!is_numeric($n) || $n > $total_page_links) {
+                    $n = $total_page_links;
+                }
+
+                $links = array();
+
+                for ($i = 1; $i <= $n; $i++) {
+                    if ($offset > 0 && $i <= $offset) {
+                        array_shift($this->_links_page);
+                    } else {
+                        $links[] = array_shift($this->_links_page);
                     }
                 }
-                //Заменяем сущности на ИЛИ (сущность|символ)
-                foreach ($replace_array as $unspec => $real) {
-                    $sentence = str_replace($real, '((' . $real . ')|(' . $unspec . '))', $sentence);
-                }
-                //Заменяем пробелы на переносы или сущности пробелов
-                $source_sentences[$n] = str_replace(' ', '((\s)|(&nbsp;))+', $sentence);
 
-                if ($this->_debug) {
-                    $debug .= $source_sentences[$n] . "\r\n\r\n";
+                $html = join($this->_links_delimiter, $links);
+
+                // РµСЃР»Рё Р·Р°РїСЂРѕС€РµРЅР° РѕРїСЂРµРґРµР»РµРЅРЅР°СЏ РєРѕРґРёСЂРѕРІРєР°, Рё РёР·РІРµСЃС‚РЅР° РєРѕРґРёСЂРѕРІРєР° РєРµС€Р°, Рё РѕРЅРё СЂР°Р·РЅС‹Рµ, РєРѕРЅРІРµСЂС‚РёСЂСѓРµРј РІ Р·Р°РґР°РЅРЅСѓСЋ
+                if (
+                    strlen($this->_charset) > 0
+                    &&
+                    strlen($this->_sape_charset) > 0
+                    &&
+                    $this->_sape_charset != $this->_charset
+                    &&
+                    function_exists('iconv')
+                ) {
+                    $new_html = @iconv($this->_sape_charset, $this->_charset, $html);
+                    if ($new_html) {
+                        $html = $new_html;
+                    }
+                }
+
+                if ($this->_is_our_bot) {
+                    $html = '<sape_noindex>' . $html . '</sape_noindex>';
+                }
+            } else {
+                $html = $this->_links_page;
+                if ($this->_is_our_bot) {
+                    $html .= '<sape_noindex></sape_noindex>';
                 }
             }
 
             if ($this->_debug) {
-                $debug .= '-->';
+                $html .= print_r($this, true);
             }
 
-            //если это первый кусок, то не будем добавлять <
-            $first_part = true;
-            //пустая переменная для записи
+            return $html;
+        }
 
-            if (count($source_sentences) > 0) {
+        function _get_db_file() {
+            if ($this->_multi_site) {
+                return dirname(__FILE__) . '/' . $this->_host . '.links.db';
+            } else {
+                return dirname(__FILE__) . '/links.db';
+            }
+        }
 
-                $content = '';
-                $open_tags = array(); //Открытые забаненые тэги
-                $close_tag = ''; //Название текущего закрывающего тэга
+        function _get_dispenser_path() {
+            return '/code.php?user=' . _SAPE_USER . '&host=' . $this->_host;
+        }
 
-                //Разбиваем по символу начала тега
-                $part = strtok(' ' . $text, '<');
+        function set_data($data) {
+            if ($this->_ignore_case) {
+                $this->_links = array_change_key_case($data);
+            } else {
+                $this->_links = $data;
+            }
+            if (isset($this->_links['__sape_delimiter__'])) {
+                $this->_links_delimiter = $this->_links['__sape_delimiter__'];
+            }
+            // РѕРїСЂРµРґРµР»СЏРµРј РєРѕРґРёСЂРѕРІРєСѓ РєРµС€Р°
+            if (isset($this->_links['__sape_charset__'])) {
+                $this->_sape_charset = $this->_links['__sape_charset__'];
+            } else {
+                $this->_sape_charset = '';
+            }
+            if (@array_key_exists($this->_request_uri, $this->_links) && is_array($this->_links[$this->_request_uri])) {
+                $this->_links_page = $this->_links[$this->_request_uri];
+            } else {
+                if (isset($this->_links['__sape_new_url__']) && strlen($this->_links['__sape_new_url__'])) {
+                    if ($this->_is_our_bot || $this->_force_show_code) {
+                        $this->_links_page = $this->_links['__sape_new_url__'];
+                    }
+                }
+            }
 
-                while ($part !== false) {
-                    //Определяем название тэга
-                    if (preg_match('/(?si)^(\/?[a-z0-9]+)/', $part, $matches)) {
-                        //Определяем название тега
-                        $tag_name = strtolower($matches[1]);
-                        //Определяем закрывающий ли тэг
-                        if (substr($tag_name, 0, 1) == '/') {
-                            $close_tag = substr($tag_name, 1);
-                            if ($this->_debug) {
-                                $debug .= '<!-- close_tag: ' . $close_tag . ' -->';
-                            }
-                        } else {
-                            $close_tag = '';
-                            if ($this->_debug) {
-                                $debug .= '<!-- open_tag: ' . $tag_name . ' -->';
-                            }
+            // Р•СЃС‚СЊ Р»Рё С„Р»Р°Рі Р±Р»РѕС‡РЅС‹С… СЃСЃС‹Р»РѕРє
+            if (isset($this->_links['__sape_show_only_block__'])) {
+                $this->_show_only_block = $this->_links['__sape_show_only_block__'];
+            }
+            else {
+                $this->_show_only_block = false;
+            }
+
+            // Р•СЃС‚СЊ Р»Рё С€Р°Р±Р»РѕРЅ РґР»СЏ РєСЂР°СЃРёРІС‹С… СЃСЃС‹Р»РѕРє
+            if (isset($this->_links['__sape_block_tpl__']) && !empty($this->_links['__sape_block_tpl__'])
+                && is_array($this->_links['__sape_block_tpl__'])){
+                $this->_block_tpl = $this->_links['__sape_block_tpl__'];
+            }
+
+            // Р•СЃС‚СЊ Р»Рё РїР°СЂР°РјРµС‚СЂС‹ РґР»СЏ РєСЂР°СЃРёРІС‹С… СЃСЃС‹Р»РѕРє
+            if (isset($this->_links['__sape_block_tpl_options__']) && !empty($this->_links['__sape_block_tpl_options__'])
+                && is_array($this->_links['__sape_block_tpl_options__'])){
+                $this->_block_tpl_options = $this->_links['__sape_block_tpl_options__'];
+            }
+
+            // IDNA-РґРѕРјРµРЅС‹
+            if (isset($this->_links['__sape_block_uri_idna__']) && !empty($this->_links['__sape_block_uri_idna__'])
+                && is_array($this->_links['__sape_block_uri_idna__'])){
+                $this->_block_uri_idna = $this->_links['__sape_block_uri_idna__'];
+            }
+
+            // Р‘Р»РѕРєРё
+            $check_blocks = array(
+                'beforeall',
+                'beforeblock',
+                'afterblock',
+                'itemobligatory',
+                'itemconditional',
+                'afterall'
+            );
+
+            foreach($check_blocks as $block_name) {
+
+                $var_name = '__sape_block_ins_' . $block_name . '__';
+                $prop_name = '_block_ins_' . $block_name;
+
+                if (isset($this->_links[$var_name]) && strlen($this->_links[$var_name]) > 0) {
+                    $this->$prop_name = $this->_links[$var_name];
+                }
+
+            }
+        }
+    }
+
+    /**
+     * РљР»Р°СЃСЃ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РєРѕРЅС‚РµРєСЃС‚РЅС‹РјРё СЃСЃС‹Р»РєР°РјРё
+     */
+    class SAPE_context extends SAPE_base {
+
+        var $_words = array();
+        var $_words_page = array();
+        var $_user_agent = 'SAPE_Context PHP';
+        var $_filter_tags = array('a', 'textarea', 'select', 'script', 'style', 'label', 'noscript', 'noindex', 'button');
+
+        function SAPE_context($options = null) {
+            parent::SAPE_base($options);
+            $this->load_data();
+        }
+
+        /**
+         * Р—Р°РјРµРЅР° СЃР»РѕРІ РІ РєСѓСЃРєРµ С‚РµРєСЃС‚Р° Рё РѕР±СЂР°РјР»СЏРµС‚ РµРіРѕ С‚РµРіР°РјРё sape_index
+         */
+        function replace_in_text_segment($text) {
+            $debug = '';
+            if ($this->_debug) {
+                $debug .= "<!-- argument for replace_in_text_segment: \r\n" . base64_encode($text) . "\r\n -->";
+            }
+            if (count($this->_words_page) > 0) {
+
+                $source_sentence = array();
+                if ($this->_debug) {
+                    $debug .= '<!-- sentences for replace: ';
+                }
+                //РЎРѕР·РґР°РµРј РјР°СЃСЃРёРІ РёСЃС…РѕРґРЅС‹С… С‚РµРєСЃС‚РѕРІ РґР»СЏ Р·Р°РјРµРЅС‹
+                foreach ($this->_words_page as $n => $sentence) {
+                    //Р—Р°РјРµРЅСЏРµРј РІСЃРµ СЃСѓС‰РЅРѕСЃС‚Рё РЅР° СЃРёРјРІРѕР»С‹
+                    $special_chars = array(
+                        '&amp;' => '&',
+                        '&quot;' => '"',
+                        '&#039;' => '\'',
+                        '&lt;' => '<',
+                        '&gt;' => '>'
+                    );
+                    $sentence = strip_tags($sentence);
+                    foreach ($special_chars as $from => $to) {
+                        str_replace($from, $to, $sentence);
+                    }
+                    //РџСЂРµРѕР±СЂР°Р·СѓРµРј РІСЃРµ СЃРїРµС† СЃРёРјРІРѕР»С‹ РІ СЃСѓС‰РЅРѕСЃС‚Рё
+                    $sentence = htmlspecialchars($sentence);
+                    //РљРІРѕС‚РёСЂСѓРµРј
+                    $sentence = preg_quote($sentence, '/');
+                    $replace_array = array();
+                    if (preg_match_all('/(&[#a-zA-Z0-9]{2,6};)/isU', $sentence, $out)) {
+                        for ($i = 0; $i < count($out[1]); $i++) {
+                            $unspec = $special_chars[$out[1][$i]];
+                            $real = $out[1][$i];
+                            $replace_array[$unspec] = $real;
                         }
-                        $cnt_tags = count($open_tags);
-                        //Если закрывающий тег совпадает с тегом в стеке открытых запрещенных тегов
-                        if (($cnt_tags > 0) && ($open_tags[$cnt_tags - 1] == $close_tag)) {
-                            array_pop($open_tags);
-                            if ($this->_debug) {
-                                $debug .= '<!-- ' . $tag_name . ' - deleted from open_tags -->';
-                            }
-                            if ($cnt_tags - 1 == 0) {
+                    }
+                    //Р—Р°РјРµРЅСЏРµРј СЃСѓС‰РЅРѕСЃС‚Рё РЅР° РР›Р (СЃСѓС‰РЅРѕСЃС‚СЊ|СЃРёРјРІРѕР»)
+                    foreach ($replace_array as $unspec => $real) {
+                        $sentence = str_replace($real, '((' . $real . ')|(' . $unspec . '))', $sentence);
+                    }
+                    //Р—Р°РјРµРЅСЏРµРј РїСЂРѕР±РµР»С‹ РЅР° РїРµСЂРµРЅРѕСЃС‹ РёР»Рё СЃСѓС‰РЅРѕСЃС‚Рё РїСЂРѕР±РµР»РѕРІ
+                    $source_sentences[$n] = str_replace(' ', '((\s)|(&nbsp;))+', $sentence);
+
+                    if ($this->_debug) {
+                        $debug .= $source_sentences[$n] . "\r\n\r\n";
+                    }
+                }
+
+                if ($this->_debug) {
+                    $debug .= '-->';
+                }
+
+                //РµСЃР»Рё СЌС‚Рѕ РїРµСЂРІС‹Р№ РєСѓСЃРѕРє, С‚Рѕ РЅРµ Р±СѓРґРµРј РґРѕР±Р°РІР»СЏС‚СЊ <
+                $first_part = true;
+                //РїСѓСЃС‚Р°СЏ РїРµСЂРµРјРµРЅРЅР°СЏ РґР»СЏ Р·Р°РїРёСЃРё
+
+                if (count($source_sentences) > 0) {
+
+                    $content = '';
+                    $open_tags = array(); //РћС‚РєСЂС‹С‚С‹Рµ Р·Р°Р±Р°РЅРµРЅС‹Рµ С‚СЌРіРё
+                    $close_tag = ''; //РќР°Р·РІР°РЅРёРµ С‚РµРєСѓС‰РµРіРѕ Р·Р°РєСЂС‹РІР°СЋС‰РµРіРѕ С‚СЌРіР°
+
+                    //Р Р°Р·Р±РёРІР°РµРј РїРѕ СЃРёРјРІРѕР»Сѓ РЅР°С‡Р°Р»Р° С‚РµРіР°
+                    $part = strtok(' ' . $text, '<');
+
+                    while ($part !== false) {
+                        //РћРїСЂРµРґРµР»СЏРµРј РЅР°Р·РІР°РЅРёРµ С‚СЌРіР°
+                        if (preg_match('/(?si)^(\/?[a-z0-9]+)/', $part, $matches)) {
+                            //РћРїСЂРµРґРµР»СЏРµРј РЅР°Р·РІР°РЅРёРµ С‚РµРіР°
+                            $tag_name = strtolower($matches[1]);
+                            //РћРїСЂРµРґРµР»СЏРµРј Р·Р°РєСЂС‹РІР°СЋС‰РёР№ Р»Рё С‚СЌРі
+                            if (substr($tag_name, 0, 1) == '/') {
+                                $close_tag = substr($tag_name, 1);
                                 if ($this->_debug) {
-                                    $debug .= '<!-- start replacement -->';
-                                }
-                            }
-                        }
-
-                        //Если нет открытых плохих тегов, то обрабатываем
-                        if (count($open_tags) == 0) {
-                            //если не запрещенный тэг, то начинаем обработку
-                            if (!in_array($tag_name, $this->_filter_tags)) {
-                                $split_parts = explode('>', $part, 2);
-                                //Перестраховываемся
-                                if (count($split_parts) == 2) {
-                                    //Начинаем перебор фраз для замены
-                                    foreach ($source_sentences as $n => $sentence) {
-                                        if (preg_match('/' . $sentence . '/', $split_parts[1]) == 1) {
-                                            $split_parts[1] = preg_replace('/' . $sentence . '/', str_replace('$', '\$', $this->_words_page[$n]), $split_parts[1], 1);
-                                            if ($this->_debug) {
-                                                $debug .= '<!-- ' . $sentence . ' --- ' . $this->_words_page[$n] . ' replaced -->';
-                                            }
-
-                                            //Если заменили, то удаляем строчку из списка замены
-                                            unset($source_sentences[$n]);
-                                            unset($this->_words_page[$n]);
-                                        }
-                                    }
-                                    $part = $split_parts[0] . '>' . $split_parts[1];
-                                    unset($split_parts);
+                                    $debug .= '<!-- close_tag: ' . $close_tag . ' -->';
                                 }
                             } else {
-                                //Если у нас запрещеный тэг, то помещаем его в стек открытых
-                                $open_tags[] = $tag_name;
+                                $close_tag = '';
                                 if ($this->_debug) {
-                                    $debug .= '<!-- ' . $tag_name . ' - added to open_tags, stop replacement -->';
+                                    $debug .= '<!-- open_tag: ' . $tag_name . ' -->';
+                                }
+                            }
+                            $cnt_tags = count($open_tags);
+                            //Р•СЃР»Рё Р·Р°РєСЂС‹РІР°СЋС‰РёР№ С‚РµРі СЃРѕРІРїР°РґР°РµС‚ СЃ С‚РµРіРѕРј РІ СЃС‚РµРєРµ РѕС‚РєСЂС‹С‚С‹С… Р·Р°РїСЂРµС‰РµРЅРЅС‹С… С‚РµРіРѕРІ
+                            if (($cnt_tags > 0) && ($open_tags[$cnt_tags - 1] == $close_tag)) {
+                                array_pop($open_tags);
+                                if ($this->_debug) {
+                                    $debug .= '<!-- ' . $tag_name . ' - deleted from open_tags -->';
+                                }
+                                if ($cnt_tags - 1 == 0) {
+                                    if ($this->_debug) {
+                                        $debug .= '<!-- start replacement -->';
+                                    }
+                                }
+                            }
+
+                            //Р•СЃР»Рё РЅРµС‚ РѕС‚РєСЂС‹С‚С‹С… РїР»РѕС…РёС… С‚РµРіРѕРІ, С‚Рѕ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј
+                            if (count($open_tags) == 0) {
+                                //РµСЃР»Рё РЅРµ Р·Р°РїСЂРµС‰РµРЅРЅС‹Р№ С‚СЌРі, С‚Рѕ РЅР°С‡РёРЅР°РµРј РѕР±СЂР°Р±РѕС‚РєСѓ
+                                if (!in_array($tag_name, $this->_filter_tags)) {
+                                    $split_parts = explode('>', $part, 2);
+                                    //РџРµСЂРµСЃС‚СЂР°С…РѕРІС‹РІР°РµРјСЃСЏ
+                                    if (count($split_parts) == 2) {
+                                        //РќР°С‡РёРЅР°РµРј РїРµСЂРµР±РѕСЂ С„СЂР°Р· РґР»СЏ Р·Р°РјРµРЅС‹
+                                        foreach ($source_sentences as $n => $sentence) {
+                                            if (preg_match('/' . $sentence . '/', $split_parts[1]) == 1) {
+                                                $split_parts[1] = preg_replace('/' . $sentence . '/', str_replace('$', '\$', $this->_words_page[$n]), $split_parts[1], 1);
+                                                if ($this->_debug) {
+                                                    $debug .= '<!-- ' . $sentence . ' --- ' . $this->_words_page[$n] . ' replaced -->';
+                                                }
+
+                                                //Р•СЃР»Рё Р·Р°РјРµРЅРёР»Рё, С‚Рѕ СѓРґР°Р»СЏРµРј СЃС‚СЂРѕС‡РєСѓ РёР· СЃРїРёСЃРєР° Р·Р°РјРµРЅС‹
+                                                unset($source_sentences[$n]);
+                                                unset($this->_words_page[$n]);
+                                            }
+                                        }
+                                        $part = $split_parts[0] . '>' . $split_parts[1];
+                                        unset($split_parts);
+                                    }
+                                } else {
+                                    //Р•СЃР»Рё Сѓ РЅР°СЃ Р·Р°РїСЂРµС‰РµРЅС‹Р№ С‚СЌРі, С‚Рѕ РїРѕРјРµС‰Р°РµРј РµРіРѕ РІ СЃС‚РµРє РѕС‚РєСЂС‹С‚С‹С…
+                                    $open_tags[] = $tag_name;
+                                    if ($this->_debug) {
+                                        $debug .= '<!-- ' . $tag_name . ' - added to open_tags, stop replacement -->';
+                                    }
+                                }
+                            }
+                        } else {
+                            //Р•СЃР»Рё РЅРµС‚ РЅР°Р·РІР°РЅРёСЏ С‚РµРіР°, С‚Рѕ СЃС‡РёС‚Р°РµРј, С‡С‚Рѕ РїРµСЂРµРґ РЅР°РјРё С‚РµРєСЃС‚
+                            foreach ($source_sentences as $n => $sentence) {
+                                if (preg_match('/' . $sentence . '/', $part) == 1) {
+                                    $part = preg_replace('/' . $sentence . '/', str_replace('$', '\$', $this->_words_page[$n]), $part, 1);
+
+                                    if ($this->_debug) {
+                                        $debug .= '<!-- ' . $sentence . ' --- ' . $this->_words_page[$n] . ' replaced -->';
+                                    }
+
+                                    //Р•СЃР»Рё Р·Р°РјРµРЅРёР»Рё, С‚Рѕ СѓРґР°Р»СЏРµРј СЃС‚СЂРѕС‡РєСѓ РёР· СЃРїРёСЃРєР° Р·Р°РјРµРЅС‹,
+                                    //С‡С‚РѕР±С‹ Р±С‹Р»Рѕ РјРѕР¶РЅРѕ РґРµР»Р°С‚СЊ РјРЅРѕР¶РµСЃС‚РІРµРЅРЅС‹Р№ РІС‹Р·РѕРІ
+                                    unset($source_sentences[$n]);
+                                    unset($this->_words_page[$n]);
                                 }
                             }
                         }
-                    } else {
-                        //Если нет названия тега, то считаем, что перед нами текст
-                        foreach ($source_sentences as $n => $sentence) {
-                            if (preg_match('/' . $sentence . '/', $part) == 1) {
-                                $part = preg_replace('/' . $sentence . '/', str_replace('$', '\$', $this->_words_page[$n]), $part, 1);
 
-                                if ($this->_debug) {
-                                    $debug .= '<!-- ' . $sentence . ' --- ' . $this->_words_page[$n] . ' replaced -->';
-                                }
-
-                                //Если заменили, то удаляем строчку из списка замены,
-                                //чтобы было можно делать множественный вызов
-                                unset($source_sentences[$n]);
-                                unset($this->_words_page[$n]);
-                            }
+                        //Р•СЃР»Рё Сѓ РЅР°СЃ СЂРµР¶РёРј РґРµР±Р°РіРёРЅРіР°, С‚Рѕ РІС‹РІРѕРґРёРј
+                        if ($this->_debug) {
+                            $content .= $debug;
+                            $debug = '';
                         }
+                        //Р•СЃР»Рё СЌС‚Рѕ РїРµСЂРІР°СЏ С‡Р°СЃС‚СЊ, С‚Рѕ РЅРµ РІС‹РІРѕРґРёРј <
+                        if ($first_part) {
+                            $content .= $part;
+                            $first_part = false;
+                        } else {
+                            $content .= $debug . '<' . $part;
+                        }
+                        //РџРѕР»СѓС‡Р°РµРј СЃР»РµРґСѓСЋС‰Сѓ С‡Р°СЃС‚СЊ
+                        unset($part);
+                        $part = strtok('<');
                     }
-
-                    //Если у нас режим дебагинга, то выводим
-                    if ($this->_debug) {
-                        $content .= $debug;
-                        $debug = '';
-                    }
-                    //Если это первая часть, то не выводим <
-                    if ($first_part) {
-                        $content .= $part;
-                        $first_part = false;
-                    } else {
-                        $content .= $debug . '<' . $part;
-                    }
-                    //Получаем следующу часть
-                    unset($part);
-                    $part = strtok('<');
-                }
-                $text = ltrim($content);
-                unset($content);
-            }
-        } else {
-            if ($this->_debug) {
-                $debug .= '<!-- No word`s for page -->';
-            }
-        }
-
-        if ($this->_debug) {
-            $debug .= '<!-- END: work of replace_in_text_segment() -->';
-        }
-
-        if ($this->_is_our_bot || $this->_force_show_code || $this->_debug) {
-            $text = '<sape_index>' . $text . '</sape_index>';
-            if (isset($this->_words['__sape_new_url__']) && strlen($this->_words['__sape_new_url__'])) {
-                $text .= $this->_words['__sape_new_url__'];
-            }
-        }
-
-        if ($this->_debug) {
-            if (count($this->_words_page) > 0) {
-                $text .= '<!-- Not replaced: ' . "\r\n";
-                foreach ($this->_words_page as $n => $value) {
-                    $text .= $value . "\r\n\r\n";
-                }
-                $text .= '-->';
-            }
-
-            $text .= $debug;
-        }
-        return $text;
-    }
-
-    /*
-     * Замена слов
-     *
-     */
-    function replace_in_page(&$buffer) {
-
-        if (count($this->_words_page) > 0) {
-            //разбиваем строку по sape_index
-            //Проверяем есть ли теги sape_index
-            $split_content = preg_split('/(?smi)(<\/?sape_index>)/', $buffer, -1);
-            $cnt_parts = count($split_content);
-            if ($cnt_parts > 1) {
-                //Если есть хоть одна пара sape_index, то начинаем работу
-                if ($cnt_parts >= 3) {
-                    for ($i = 1; $i < $cnt_parts; $i = $i + 2) {
-                        $split_content[$i] = $this->replace_in_text_segment($split_content[$i]);
-                    }
-                }
-                $buffer = implode('', $split_content);
-                if ($this->_debug) {
-                    $buffer .= '<!-- Split by Sape_index cnt_parts=' . $cnt_parts . '-->';
+                    $text = ltrim($content);
+                    unset($content);
                 }
             } else {
-                //Если не нашли sape_index, то пробуем разбить по BODY
-                $split_content = preg_split('/(?smi)(<\/?body[^>]*>)/', $buffer, -1, PREG_SPLIT_DELIM_CAPTURE);
-                //Если нашли содержимое между body
-                if (count($split_content) == 5) {
-                    $split_content[0] = $split_content[0] . $split_content[1];
-                    $split_content[1] = $this->replace_in_text_segment($split_content[2]);
-                    $split_content[2] = $split_content[3] . $split_content[4];
-                    unset($split_content[3]);
-                    unset($split_content[4]);
-                    $buffer = $split_content[0] . $split_content[1] . $split_content[2];
+                if ($this->_debug) {
+                    $debug .= '<!-- No word`s for page -->';
+                }
+            }
+
+            if ($this->_debug) {
+                $debug .= '<!-- END: work of replace_in_text_segment() -->';
+            }
+
+            if ($this->_is_our_bot || $this->_force_show_code || $this->_debug) {
+                $text = '<sape_index>' . $text . '</sape_index>';
+                if (isset($this->_words['__sape_new_url__']) && strlen($this->_words['__sape_new_url__'])) {
+                    $text .= $this->_words['__sape_new_url__'];
+                }
+            }
+
+            if ($this->_debug) {
+                if (count($this->_words_page) > 0) {
+                    $text .= '<!-- Not replaced: ' . "\r\n";
+                    foreach ($this->_words_page as $n => $value) {
+                        $text .= $value . "\r\n\r\n";
+                    }
+                    $text .= '-->';
+                }
+
+                $text .= $debug;
+            }
+            return $text;
+        }
+
+        /**
+         * Р—Р°РјРµРЅР° СЃР»РѕРІ
+         */
+        function replace_in_page(&$buffer) {
+
+            if (count($this->_words_page) > 0) {
+                //СЂР°Р·Р±РёРІР°РµРј СЃС‚СЂРѕРєСѓ РїРѕ sape_index
+                //РџСЂРѕРІРµСЂСЏРµРј РµСЃС‚СЊ Р»Рё С‚РµРіРё sape_index
+                $split_content = preg_split('/(?smi)(<\/?sape_index>)/', $buffer, -1);
+                $cnt_parts = count($split_content);
+                if ($cnt_parts > 1) {
+                    //Р•СЃР»Рё РµСЃС‚СЊ С…РѕС‚СЊ РѕРґРЅР° РїР°СЂР° sape_index, С‚Рѕ РЅР°С‡РёРЅР°РµРј СЂР°Р±РѕС‚Сѓ
+                    if ($cnt_parts >= 3) {
+                        for ($i = 1; $i < $cnt_parts; $i = $i + 2) {
+                            $split_content[$i] = $this->replace_in_text_segment($split_content[$i]);
+                        }
+                    }
+                    $buffer = implode('', $split_content);
                     if ($this->_debug) {
-                        $buffer .= '<!-- Split by BODY -->';
+                        $buffer .= '<!-- Split by Sape_index cnt_parts=' . $cnt_parts . '-->';
                     }
                 } else {
-                    //Если не нашли sape_index и не смогли разбить по body
-                    if ($this->_debug) {
-                        $buffer .= '<!-- Can`t split by BODY -->';
+                    //Р•СЃР»Рё РЅРµ РЅР°С€Р»Рё sape_index, С‚Рѕ РїСЂРѕР±СѓРµРј СЂР°Р·Р±РёС‚СЊ РїРѕ BODY
+                    $split_content = preg_split('/(?smi)(<\/?body[^>]*>)/', $buffer, -1, PREG_SPLIT_DELIM_CAPTURE);
+                    //Р•СЃР»Рё РЅР°С€Р»Рё СЃРѕРґРµСЂР¶РёРјРѕРµ РјРµР¶РґСѓ body
+                    if (count($split_content) == 5) {
+                        $split_content[0] = $split_content[0] . $split_content[1];
+                        $split_content[1] = $this->replace_in_text_segment($split_content[2]);
+                        $split_content[2] = $split_content[3] . $split_content[4];
+                        unset($split_content[3]);
+                        unset($split_content[4]);
+                        $buffer = $split_content[0] . $split_content[1] . $split_content[2];
+                        if ($this->_debug) {
+                            $buffer .= '<!-- Split by BODY -->';
+                        }
+                    } else {
+                        //Р•СЃР»Рё РЅРµ РЅР°С€Р»Рё sape_index Рё РЅРµ СЃРјРѕРіР»Рё СЂР°Р·Р±РёС‚СЊ РїРѕ body
+                        if ($this->_debug) {
+                            $buffer .= '<!-- Can`t split by BODY -->';
+                        }
+                    }
+                }
+
+            } else {
+                if (!$this->_is_our_bot && !$this->_force_show_code && !$this->_debug) {
+                    $buffer = preg_replace('/(?smi)(<\/?sape_index>)/', '', $buffer);
+                } else {
+                    if (isset($this->_words['__sape_new_url__']) && strlen($this->_words['__sape_new_url__'])) {
+                        $buffer .= $this->_words['__sape_new_url__'];
+                    }
+                }
+                if ($this->_debug) {
+                    $buffer .= '<!-- No word`s for page -->';
+                }
+            }
+            return $buffer;
+        }
+
+        function _get_db_file() {
+            if ($this->_multi_site) {
+                return dirname(__FILE__) . '/' . $this->_host . '.words.db';
+            } else {
+                return dirname(__FILE__) . '/words.db';
+            }
+        }
+
+        function _get_dispenser_path() {
+            return '/code_context.php?user=' . _SAPE_USER . '&host=' . $this->_host;
+        }
+
+        function set_data($data) {
+            $this->_words = $data;
+            if (@array_key_exists($this->_request_uri, $this->_words) && is_array($this->_words[$this->_request_uri])) {
+                $this->_words_page = $this->_words[$this->_request_uri];
+            }
+        }
+    }
+
+    /**
+     * РљР»Р°СЃСЃ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃРѕ СЃС‚Р°С‚СЊСЏРјРё articles.sape.ru РїРѕРєР°Р·С‹РІР°РµС‚ Р°РЅРѕРЅСЃС‹ Рё СЃС‚Р°С‚СЊРё
+     */
+    class SAPE_articles extends SAPE_base {
+
+        var $_request_mode;
+
+        var $_server_list             = array('dispenser.articles.sape.ru');
+
+        var $_data                    = array();
+
+        var $_article_id;
+
+        var $_save_file_name;
+
+        var $_announcements_delimiter = '';
+
+        var $_images_path;
+
+        var $_template_error = false;
+
+        var $_noindex_code = '<!--sape_noindex-->';
+
+        var $_headers_enabled = false;
+
+        var $_mask_code;
+
+        var $_real_host;
+
+        var $_user_agent = 'SAPE_Articles_Client PHP';
+
+        function SAPE_articles($options = null){
+            parent::SAPE_base($options);
+            if (is_array($options) && isset($options['headers_enabled'])) {
+                $this->_headers_enabled = $options['headers_enabled'];
+            }
+            // РљРѕРґРёСЂРѕРІРєР°
+            if (isset($options['charset']) && strlen($options['charset'])) {
+                $this->_charset = $options['charset'];
+            } else {
+                $this->_charset = '';
+            }
+            $this->_get_index();
+            if (!empty($this->_data['index']['announcements_delimiter'])) {
+                $this->_announcements_delimiter = $this->_data['index']['announcements_delimiter'];
+            }
+            if (!empty($this->_data['index']['charset'])
+                and !(isset($options['charset']) && strlen($options['charset']))) {
+                $this->_charset = $this->_data['index']['charset'];
+            }
+            if (is_array($options)) {
+                if (isset($options['host'])) {
+                    $host = $options['host'];
+                }
+            } elseif (strlen($options)) {
+                $host = $options;
+                $options = array();
+            }
+            if (isset($host) && strlen($host)) {
+                $this->_real_host = $host;
+            } else {
+                $this->_real_host = $_SERVER['HTTP_HOST'];
+            }
+            if (!isset($this->_data['index']['announcements'][$this->_request_uri])) {
+                $this->_correct_uri();
+            }
+        }
+
+        function _correct_uri() {
+            if(substr($this->_request_uri, -1) == '/') {
+                $new_uri = substr($this->_request_uri, 0, -1);
+            } else {
+                $new_uri = $this->_request_uri . '/';
+            }
+            if (isset($this->_data['index']['announcements'][$new_uri])) {
+                $this->_request_uri = $new_uri;
+            }
+        }
+
+        /**
+         * Р’РѕР·РІСЂР°С‰Р°РµС‚ Р°РЅРѕРЅСЃС‹ РґР»СЏ РІС‹РІРѕРґР°
+         * @param int $n      РЎРєРѕР»СЊРєРѕ Р°РЅРѕРЅСЃРѕРІ РІС‹РІРµСЃС‚Рё, Р»РёР±Рѕ РЅРµ Р·Р°РґР°РЅРѕ - РІС‹РІРµСЃС‚Рё РІСЃРµ
+         * @param int $offset C РєР°РєРѕРіРѕ Р°РЅРѕРЅСЃР° РЅР°С‡РёРЅР°РµРј РІС‹РІРѕРґ(РЅСѓРјРµСЂР°С†РёСЏ СЃ 0), Р»РёР±Рѕ РЅРµ Р·Р°РґР°РЅРѕ - СЃ РЅСѓР»РµРІРѕРіРѕ
+         * @return string
+         */
+        function return_announcements($n = null, $offset = 0){
+            $output = '';
+            if ($this->_force_show_code || $this->_is_our_bot) {
+                if (isset($this->_data['index']['checkCode'])) {
+                    $output .= $this->_data['index']['checkCode'];
+                }
+            }
+
+            if (isset($this->_data['index']['announcements'][$this->_request_uri])) {
+
+                $total_page_links = count($this->_data['index']['announcements'][$this->_request_uri]);
+
+                if (!is_numeric($n) || $n > $total_page_links) {
+                    $n = $total_page_links;
+                }
+
+                $links = array();
+
+                for ($i = 1; $i <= $n; $i++) {
+                    if ($offset > 0 && $i <= $offset) {
+                        array_shift($this->_data['index']['announcements'][$this->_request_uri]);
+                    } else {
+                        $links[] = array_shift($this->_data['index']['announcements'][$this->_request_uri]);
+                    }
+                }
+
+                $html = join($this->_announcements_delimiter, $links);
+
+                if ($this->_is_our_bot) {
+                    $html = '<sape_noindex>' . $html . '</sape_noindex>';
+                }
+
+                $output .= $html;
+
+            }
+
+            return $output;
+        }
+
+        function _get_index(){
+            $this->_set_request_mode('index');
+            $this->_save_file_name = 'articles.db';
+            $this->load_data();
+        }
+
+        /**
+         * Р’РѕР·РІСЂР°С‰Р°РµС‚ РїРѕР»РЅС‹Р№ HTML РєРѕРґ СЃС‚СЂР°РЅРёС†С‹ СЃС‚Р°С‚СЊРё
+         * @return string
+         */
+        function process_request(){
+
+            if (!empty($this->_data['index']) and isset($this->_data['index']['articles'][$this->_request_uri])) {
+                return $this->_return_article();
+            } elseif (!empty($this->_data['index']) and isset($this->_data['index']['images'][$this->_request_uri])) {
+                return $this->_return_image();
+            } else {
+                if ($this->_is_our_bot) {
+                    return $this->_return_html($this->_data['index']['checkCode'] . $this->_noindex_code);
+                } else {
+                    return $this->_return_not_found();
+                }
+            }
+        }
+
+        function _return_article(){
+            $this->_set_request_mode('article');
+            //Р—Р°РіСЂСѓР¶Р°РµРј СЃС‚Р°С‚СЊСЋ
+            $article_meta = $this->_data['index']['articles'][$this->_request_uri];
+            $this->_save_file_name = $article_meta['id'] . '.article.db';
+            $this->_article_id = $article_meta['id'];
+            $this->load_data();
+
+            //РћР±РЅРѕРІРёРј РµСЃР»Рё СѓСЃС‚Р°СЂРµР»Р°
+            if (!isset($this->_data['article']['date_updated']) OR $this->_data['article']['date_updated']  < $article_meta['date_updated']) {
+                unlink($this->_get_db_file());
+                $this->load_data();
+            }
+
+            //РџРѕР»СѓС‡РёРј С€Р°Р±Р»РѕРЅ
+            $template = $this->_get_template($this->_data['index']['templates'][$article_meta['template_id']]['url'], $article_meta['template_id']);
+
+            //Р’С‹РІРµРґРµРј СЃС‚Р°С‚СЊСЋ
+            $article_html = $this->_fetch_article($template);
+
+            if ($this->_is_our_bot) {
+                $article_html .= $this->_noindex_code;
+            }
+
+            return $this->_return_html($article_html);
+
+        }
+
+        function _prepare_path_to_images(){
+            $this->_images_path = dirname(__FILE__) . '/images/';
+            if (!is_dir($this->_images_path)) {
+                // РџС‹С‚Р°РµРјСЃСЏ СЃРѕР·РґР°С‚СЊ РїР°РїРєСѓ.
+                if (@mkdir($this->_images_path)) {
+                    @chmod($this->_images_path, 0777);    // РџСЂР°РІР° РґРѕСЃС‚СѓРїР°
+                } else {
+                    return $this->raise_error('РќРµС‚ РїР°РїРєРё ' . $this->_images_path . '. РЎРѕР·РґР°С‚СЊ РЅРµ СѓРґР°Р»РѕСЃСЊ. Р’С‹СЃС‚Р°РІРёС‚Рµ РїСЂР°РІР° 777 РЅР° РїР°РїРєСѓ.');
+                }
+            }
+            if ($this->_multi_site) {
+                $this->_images_path .= $this->_host. '.';
+            }
+        }
+
+        function _return_image(){
+            $this->_set_request_mode('image');
+            $this->_prepare_path_to_images();
+
+            //РџСЂРѕРІРµСЂРёРј Р·Р°РіСЂСѓР¶РµРЅР° Р»Рё РєР°СЂС‚РёРЅРєР°
+            $image_meta = $this->_data['index']['images'][$this->_request_uri];
+            $image_path = $this->_images_path . $image_meta['id']. '.' . $image_meta['ext'];
+
+            if (!is_file($image_path) or filemtime($image_path) > $image_meta['date_updated']) {
+                // Р§С‚РѕР±С‹ РЅРµ РїРѕРІРµСЃРёС‚СЊ РїР»РѕС‰Р°РґРєСѓ РєР»РёРµРЅС‚Р° Рё С‡С‚РѕР±С‹ РЅРµ Р±С‹Р»Рѕ РѕРґРЅРѕРІСЂРµРјРµРЅРЅС‹С… Р·Р°РїСЂРѕСЃРѕРІ
+                @touch($image_path, $image_meta['date_updated']);
+
+                $path = $image_meta['dispenser_path'];
+
+                foreach ($this->_server_list as $i => $server){
+                    if ($data = $this->fetch_remote_file($server, $path)) {
+                        if (substr($data, 0, 12) == 'FATAL ERROR:') {
+                            $this->raise_error($data);
+                        } else {
+                            // [РїСЃРµРІРґРѕ]РїСЂРѕРІРµСЂРєР° С†РµР»РѕСЃС‚РЅРѕСЃС‚Рё:
+                            if (strlen($data) > 0) {
+                                $this->_write($image_path, $data);
+                                break;
+                            }
+                        }
                     }
                 }
             }
 
-        } else {
-            if (!$this->_is_our_bot && !$this->_force_show_code && !$this->_debug) {
-                $buffer = preg_replace('/(?smi)(<\/?sape_index>)/', '', $buffer);
-            } else {
-                if (isset($this->_words['__sape_new_url__']) && strlen($this->_words['__sape_new_url__'])) {
-                    $buffer .= $this->_words['__sape_new_url__'];
+            unset($data);
+            if (!is_file($image_path)) {
+                return $this->_return_not_found();
+            }
+            $image_file_meta = @getimagesize($image_path);
+            $content_type = isset($image_file_meta['mime'])?$image_file_meta['mime']:'image';
+            if ($this->_headers_enabled) {
+                header('Content-Type: ' . $content_type);
+            }
+            return $this->_read($image_path);
+        }
+
+        function _fetch_article($template){
+            if (strlen($this->_charset)) {
+                $template = str_replace('{meta_charset}',  $this->_charset, $template);
+            }
+            foreach ($this->_data['index']['template_fields'] as $field){
+                if (isset($this->_data['article'][$field])) {
+                    $template = str_replace('{' . $field . '}',  $this->_data['article'][$field], $template);
+                } else {
+                    $template = str_replace('{' . $field . '}',  '', $template);
                 }
             }
-            if ($this->_debug) {
-                $buffer .= '<!-- No word`s for page -->';
+            return ($template);
+        }
+
+        function _get_template($template_url, $templateId){
+            //Р—Р°РіСЂСѓР·РёРј РёРЅРґРµРєСЃ РµСЃР»Рё РµСЃС‚СЊ
+            $this->_save_file_name = 'tpl.articles.db';
+            $index_file = $this->_get_db_file();
+
+            if (file_exists($index_file)) {
+                $this->_data['templates'] = unserialize($this->_read($index_file));
+            }
+
+
+            //Р•СЃР»Рё С€Р°Р±Р»РѕРЅ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё СѓСЃС‚Р°СЂРµР» РІ РёРЅРґРµРєСЃРµ, РѕР±РЅРѕРІРёРј РµРіРѕ
+            if (!isset($this->_data['templates'][$template_url])
+                or (time() - $this->_data['templates'][$template_url]['date_updated']) > $this->_data['index']['templates'][$templateId]['lifetime']) {
+                $this->_refresh_template($template_url, $index_file);
+            }
+            //Р•СЃР»Рё С€Р°Р±Р»РѕРЅ РЅРµ РѕР±РЅР°СЂСѓР¶РµРЅ - РѕС€РёР±РєР°
+            if (!isset($this->_data['templates'][$template_url])) {
+                if ($this->_template_error){
+                    return $this->raise_error($this->_template_error);
+                }
+                return $this->raise_error('РќРµ РЅР°Р№РґРµРЅ С€Р°Р±Р»РѕРЅ РґР»СЏ СЃС‚Р°С‚СЊРё');
+            }
+
+            return $this->_data['templates'][$template_url]['body'];
+        }
+
+        function _refresh_template($template_url, $index_file){
+            $parseUrl = parse_url($template_url);
+
+            $download_url = '';
+            if ($parseUrl['path']) {
+                $download_url .= $parseUrl['path'];
+            }
+            if (isset($parseUrl['query'])) {
+                $download_url .= '?' . $parseUrl['query'];
+            }
+
+            $template_body = $this->fetch_remote_file($this->_real_host, $download_url, true);
+
+            //РїСЂРѕРІРµСЂРёРј РµРіРѕ РЅР° РєРѕСЂСЂРµРєС‚РЅРѕСЃС‚СЊ
+            if (!$this->_is_valid_template($template_body)){
+                return false;
+            }
+
+            $template_body = $this->_cut_template_links($template_body);
+
+            //Р—Р°РїРёС€РµРј РµРіРѕ РІРјРµСЃС‚Рµ СЃ РґСЂСѓРіРёРјРё РІ РєСЌС€
+            $this->_data['templates'][$template_url] = array( 'body' => $template_body, 'date_updated' => time());
+            //Р СЃРѕС…СЂР°РЅРёРј РєСЌС€
+            $this->_write($index_file, serialize($this->_data['templates']));
+        }
+
+        function _fill_mask ($data) {
+            global $unnecessary;
+            $len = strlen($data[0]);
+            $mask = str_repeat($this->_mask_code, $len);
+            $unnecessary[$this->_mask_code][] = array(
+                'mask' => $mask,
+                'code' => $data[0],
+                'len'  => $len
+            );
+
+            return $mask;
+        }
+
+        function _cut_unnecessary(&$contents, $code, $mask) {
+            global $unnecessary;
+            $this->_mask_code = $code;
+            $_unnecessary[$this->_mask_code] = array();
+            $contents = preg_replace_callback($mask, array($this, '_fill_mask'), $contents);
+        }
+
+        function _restore_unnecessary(&$contents, $code) {
+            global $unnecessary;
+            $offset = 0;
+            if (!empty($unnecessary[$code])) {
+                foreach ($unnecessary[$code] as $meta) {
+                    $offset = strpos($contents, $meta['mask'], $offset);
+                    $contents = substr($contents, 0, $offset)
+                        . $meta['code'] . substr($contents, $offset + $meta['len']);
+                }
             }
         }
-        return $buffer;
-    }
 
-    function _get_db_file() {
-        if ($this->_multi_site) {
-            return dirname(__FILE__) . '/' . $this->_host . '.words.db';
-        } else {
-            return dirname(__FILE__) . '/words.db';
+        function _cut_template_links($template_body){
+            $link_pattern    = '~(\<a [^\>]*?href[^\>]*?\=["\']{0,1}http[^\>]*?\>.*?\</a[^\>]*?\>|\<a [^\>]*?href[^\>]*?\=["\']{0,1}http[^\>]*?\>|\<area [^\>]*?href[^\>]*?\=["\']{0,1}http[^\>]*?\>)~si';
+            $link_subpattern = '~\<a |\<area ~si';
+            $rel_pattern     = '~[\s]{1}rel\=["\']{1}[^ "\'\>]*?["\']{1}| rel\=[^ "\'\>]*?[\s]{1}~si';
+            $href_pattern    = '~[\s]{1}href\=["\']{0,1}(http[^ "\'\>]*)?["\']{0,1} {0,1}~si';
+
+            $allowed_domains = $this->_data['index']['ext_links_allowed'];
+            $allowed_domains[] = $this -> _host;
+            $allowed_domains[] = 'www.' . $this -> _host;
+            $this->_cut_unnecessary($template_body, 'C', '|<!--(.*?)-->|smi');
+            $this->_cut_unnecessary($template_body, 'S', '|<script[^>]*>.*?</script>|si');
+            $this->_cut_unnecessary($template_body, 'N', '|<noindex[^>]*>.*?</noindex>|si');
+
+            $slices = preg_split($link_pattern, $template_body, -1,  PREG_SPLIT_DELIM_CAPTURE );
+            //РћР±СЂР°РјР»СЏРµРј РІСЃРµ РІРёРґРёРјС‹Рµ СЃСЃС‹Р»РєРё РІ noindex
+            if(is_array($slices)) {
+                foreach ($slices as $id => $link) {
+                    if ($id % 2 == 0) {
+                        continue;
+                    }
+                    if (preg_match($href_pattern, $link, $urls)) {
+                        $parsed_url = @parse_url($urls[1]);
+                        $host = isset($parsed_url['host'])?$parsed_url['host']:false;
+                        if (!in_array($host, $allowed_domains) || !$host){
+                            //РћР±СЂР°РјР»СЏРµРј РІ С‚СЌРіРё noindex
+                            $slices[$id] = '<noindex>' . $slices[$id] . '</noindex>';
+                        }
+                    }
+                }
+                $template_body = implode('', $slices);
+            }
+            //Р’РЅРѕРІСЊ РѕС‚РѕР±СЂР°Р¶Р°РµРј СЃРѕРґРµСЂР¶РёРјРѕРµ РІРЅСѓС‚СЂРё noindex
+            $this->_restore_unnecessary($template_body, 'N');
+
+            //РџСЂРѕРїРёСЃС‹РІР°РµРј РІСЃРµРј СЃСЃС‹Р»РєР°Рј nofollow
+            $slices = preg_split($link_pattern, $template_body, -1,  PREG_SPLIT_DELIM_CAPTURE );
+            if(is_array($slices)) {
+                foreach ($slices as $id => $link) {
+                    if ($id % 2 == 0) {
+                        continue;
+                    }
+                    if (preg_match($href_pattern, $link, $urls)) {
+                        $parsed_url = @parse_url($urls[1]);
+                        $host = isset($parsed_url['host'])?$parsed_url['host']:false;
+                        if (!in_array($host, $allowed_domains) || !$host) {
+                            //РІС‹СЂРµР·Р°РµРј REL
+                            $slices[$id] = preg_replace($rel_pattern, '', $link);
+                            //Р”РѕР±Р°РІР»СЏРµРј rel=nofollow
+                            $slices[$id] = preg_replace($link_subpattern, '$0rel="nofollow" ', $slices[$id]);
+                        }
+                    }
+                }
+                $template_body = implode('', $slices);
+            }
+
+            $this->_restore_unnecessary($template_body, 'S');
+            $this->_restore_unnecessary($template_body, 'C');
+            return $template_body;
         }
-    }
 
-    function _get_dispenser_path() {
-        return '/code_context.php?user=' . _SAPE_USER . '&host=' . $this->_host;
-    }
-
-    function set_data($data) {
-        $this->_words = $data;
-        if (@array_key_exists($this->_request_uri, $this->_words) && is_array($this->_words[$this->_request_uri])) {
-            $this->_words_page = $this->_words[$this->_request_uri];
+        function _is_valid_template($template_body){
+            foreach ($this->_data['index']['template_required_fields'] as $field){
+                if (strpos($template_body, '{' . $field . '}') === false){
+                    $this->_template_error = 'Р’ С€Р°Р±Р»РѕРЅРµ РЅРµ С…РІР°С‚Р°РµС‚ РїРѕР»СЏ ' . $field . '.';
+                    return false;
+                }
+            }
+            return true;
         }
-    }
-}
 
-?>itex_imoney_datafiles_delimiter_1file trustlink.php from trustlink.ru T0.4.5 31.03.2011itex_imoney_datafiles_delimiter_2trustlink.phpitex_imoney_datafiles_delimiter_2<?php
+        function _return_html($html){
+            if ($this->_headers_enabled){
+                header('HTTP/1.x 200 OK');
+                if (!empty($this->_charset)){
+                    header('Content-Type: text/html; charset=' . $this->_charset);
+                }
+            }
+            return $html;
+        }
+
+        function _return_not_found(){
+            header('HTTP/1.x 404 Not Found');
+        }
+
+        function _get_dispenser_path(){
+            switch ($this->_request_mode){
+                case 'index':
+                    return '/?user=' . _SAPE_USER . '&host=' .
+                        $this->_host . '&rtype=' . $this->_request_mode;
+                    break;
+                case 'article':
+                    return '/?user=' . _SAPE_USER . '&host=' .
+                        $this->_host . '&rtype=' . $this->_request_mode . '&artid=' . $this->_article_id;
+                    break;
+                case 'image':
+                    return $this->image_url;
+                    break;
+            }
+        }
+
+        function _set_request_mode($mode){
+            $this->_request_mode = $mode;
+        }
+
+        function _get_db_file(){
+            if ($this->_multi_site){
+                return dirname(__FILE__) . '/' . $this->_host . '.' . $this->_save_file_name;
+            }
+            else{
+                return dirname(__FILE__) . '/' . $this->_save_file_name;
+            }
+        }
+
+        function set_data($data){
+            $this->_data[$this->_request_mode] = $data;
+        }
+
+    }
+
+    ?>itex_imoney_datafiles_delimiter_1file trustlink.php from trustlink.ru T0.4.5 31.03.2011itex_imoney_datafiles_delimiter_2trustlink.phpitex_imoney_datafiles_delimiter_2<?php
 class TrustlinkClient {
     var $tl_version           = 'T0.4.5';
     var $tl_verbose           = false;
@@ -1371,30 +2245,30 @@ padding: 3px 0 !important;
   </tbody>
 </table>
 itex_imoney_datafiles_delimiter_1file tnx.php 0.2c 24.09.2008itex_imoney_datafiles_delimiter_2tnx.phpitex_imoney_datafiles_delimiter_2<?php
-// если нужно отображать ошибки - раскомментировать:
+// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:
 error_reporting(0);
 
 /* TNX */
 class TNX_n
 {
         /*
-        переменные по умолчанию
+        пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         */
         /****************************************/
-        var $_timeout_cache = 3600; // 3600 - время для обновления кеша, по умолчанию 3600 секунд, т.е. 1 час
-        var $_timeout_down = 3600; // 3600 - время для повторного обращения к tnx, в случае падения сервера, по умолчанию 3600, т.е. 1 час
-        var $_timeout_down_error = 60; // максимальное время, для интервала между сбоями при получении ссылок с сервера
-        var $_timeout_connect = 5; // таймаут коннекта
-        var $_connect_using = 'fsock'; // способ коннекта - curl или fsock
-        var $_check_down = false; // проверять, не упал ли поддомен системы. Если упал - не тормозить загрузку страниц на время таймаута
-        var $_html_delimiter = '<br>'; // разделитель или текст между ссылками
-        var $_encoding = ''; // выбор кодировки вашего сайта. Пусто - win-1251 (по умолчанию). Также возможны: KOI8-U, UTF-8 (необходим модуль iconv на хостинге)
-        var $_exceptions = 'PHPSESSID'; // здесь можно написать через пробел части, входящие в урлы для запрещения их индексации системой, в т.ч. из robots.txt. Это урлы, не доступные поисковикам, или не существующие страницы. После индексации не менять.
-        var $_forbidden = ''; // запрещенные страницы, через пробел, например нужно запретить http://www.site.ru/index.php пишем '/index.php' и т.д. На страницах типа http://www.site.ru/index.php?id=100 будут отображаться ссылки, чтобы не отображались - используйте exceptions
+        var $_timeout_cache = 3600; // 3600 - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 3600 пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅ.пїЅ. 1 пїЅпїЅпїЅ
+        var $_timeout_down = 3600; // 3600 - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ tnx, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 3600, пїЅ.пїЅ. 1 пїЅпїЅпїЅ
+        var $_timeout_down_error = 60; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        var $_timeout_connect = 5; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        var $_connect_using = 'fsock'; // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - curl пїЅпїЅпїЅ fsock
+        var $_check_down = false; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        var $_html_delimiter = '<br>'; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        var $_encoding = ''; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅ - win-1251 (пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ). пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: KOI8-U, UTF-8 (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ iconv пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+        var $_exceptions = 'PHPSESSID'; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅ пїЅ.пїЅ. пїЅпїЅ robots.txt. пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.
+        var $_forbidden = ''; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ http://www.site.ru/index.php пїЅпїЅпїЅпїЅпїЅ '/index.php' пїЅ пїЅ.пїЅ. пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ http://www.site.ru/index.php?id=100 пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ exceptions
         /****************************************/
 
         /*
-        далее ничего не менять
+        пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
         */
         var $_version = '0.2c';
         var $_return_point = 0;
@@ -1403,23 +2277,23 @@ class TNX_n
 
         function TNX_n($login, $cache_dir)
         {
-                // проверяем коннекты
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 if($this->_connect_using == 'fsock' AND !function_exists('fsockopen'))
                 {
-                        $this->print_error('Ошибка, fsockopen не поддерживается, попросите хостера включить внешние коннекты или попробуйте CURL');
+                        $this->print_error('пїЅпїЅпїЅпїЅпїЅпїЅ, fsockopen пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CURL');
                         return false;
                 }
                 if($this->_connect_using == 'curl' AND !function_exists('curl_init'))
                 {
-                        $this->print_error('Ошибка, CURL не поддерживается, попробуйте fsock.');
+                        $this->print_error('пїЅпїЅпїЅпїЅпїЅпїЅ, CURL пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ fsock.');
                         return false;
                 }
                 if(!empty($this->_encoding) AND !function_exists("iconv"))
                 {
-                        $this->print_error('Ошибка, iconv не поддерживается.');
+                        $this->print_error('пїЅпїЅпїЅпїЅпїЅпїЅ, iconv пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.');
                         return false;
                 }
-                // осталось со старого варианта, не знаю зачем, но видно надо.
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ.
                 if (strlen($_SERVER['REQUEST_URI']) > 180)
                 {
                         return false;
@@ -1473,90 +2347,90 @@ class TNX_n
                 $this->_down_file = $absolute . 'down_' . $site . '.txt';
 
                 /*
-                читаем состояние _down_file файла, результат заносим в _down_status
-                метод read_down возвращает:
-                0 - запросы к сайту разрешены
-                time() - старт времени, запросы временно не разрешены
+                пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ _down_file пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ _down_status
+                пїЅпїЅпїЅпїЅпїЅ read_down пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:
+                0 - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                time() - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 */
                 if($this->_check_down)
                 {
                         $this->_down_status = $this->read_down();
                 }
-                // проверяем, существует ли файл кеша
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                 if(!is_file($this->_cache_file))
                 {
-                        // качаем ссылки для определенной страницы
+                        // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                         $this->_content = $this->get_content();
                         if($this->_content)
                         {
                                 /*
-                                если ссылки получены, то
-                                 - создаем файл _cache_file и заносим в него,
-                                   time() создания кеша,
-                                   для ориентировки дальнейшего обновления
+                                пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ
+                                 - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ _cache_file пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ,
+                                   time() пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ,
+                                   пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                                 */
                                 $this->write_timeout();
 
                                 /*
-                                пишем полученные ссылки в кеш _cache_file
-                                в виде "_md5|_content\r\n"
+                                пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ _cache_file
+                                пїЅ пїЅпїЅпїЅпїЅ "_md5|_content\r\n"
                                 */
                                 $this->write_cache();
                         }
                 }
-                // если файл кеша существует
+                // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 else
                 {
                         /*
-                        читаем из _cache_file первую строку, время создания кеша.
-                        находим время, прошедшее с момента создания кеша
+                        пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ _cache_file пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ.
+                        пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                         */
                         $time = time() - $this->read_timeout();
 
-                        // проверяем, нужно ли обновить кеш
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
                         if($time > $this->_timeout_cache)
                         {
-                                // качаем ссылки для определенной страницы
+                                // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                                 $this->_content = $this->get_content();
                                 if($this->_content)
                                 {
                                         /*
-                                        если ссылки получены, то
-                                        - обнуляем файл _cache_file и заносим в него,
-                                          time() обновления кеша,
-                                          для ориентировки дальнейшего обновления
+                                        пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ
+                                        - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ _cache_file пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ,
+                                          time() пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ,
+                                          пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                                         */
                                         $this->write_timeout();
-                                        // пишем полученные ссылки
+                                        // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                                         $this->write_cache();
                                 }
                         }
 
                         /*
-                        если обновлять кеш не нужно или же _content == false
-                        т.е. метод get_content() вернул false и ссылок не получили, то:
+                        пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ _content == false
+                        пїЅ.пїЅ. пїЅпїЅпїЅпїЅпїЅ get_content() пїЅпїЅпїЅпїЅпїЅпїЅ false пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ:
                         */
                         if($time < $this->_timeout_cache OR isset($this->_content))
                         {
-                                // пробуем найти по хешу _md5 ссылки для заданной страницы
+                                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ _md5 пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                                 $this->_content = $this->read_cache();
                                 if(!$this->_content)
                                 {
-                                        // если read_cache() вернул false
-                                        // пробуем скачать ссылки с tnx
+                                        // пїЅпїЅпїЅпїЅ read_cache() пїЅпїЅпїЅпїЅпїЅпїЅ false
+                                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ tnx
                                         $this->_content = $this->get_content();
                                         if($this->_content)
                                         {
                                                 /*
-                                                если ссылки получены, то
-                                                пишем их в кеш
+                                                пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ
+                                                пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅ
                                                 */
                                                 $this->write_cache();
                                         }
                                 }
                         }
                 }
-                // очищаем кеш состояния файлов
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                 clearstatcache();
 
                 if($this->_content !== false)
@@ -1570,10 +2444,10 @@ class TNX_n
 
         }
 
-        // Выводим ссылки
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
         function show_link($num = false)
         {
-                // проверяем есть ли массив ссылок у нас
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ
                 if(!isset($this->_content_array))
                 {
                         return false;
@@ -1581,13 +2455,13 @@ class TNX_n
 
                 $links = '';
 
-                // подсчитываем количество ссылок в массиве
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 if(!isset($this->_content_array_count)){$this->_content_array_count = sizeof($this->_content_array);}
                 if($this->_return_point >= $this->_content_array_count)
                 {
                         return false;
                 }
-                // если выводим все ссылки или указанное количество ссылок, больше чем их на самом деле
+                // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                 if($num === false OR $num >= $this->_content_array_count)
                 {
                         for ($i = $this->_return_point; $i < $this->_content_array_count; $i++)
@@ -1598,7 +2472,7 @@ class TNX_n
                 }
                 else
                 {
-                        // если все ссылки уже были выведены, то прекращаем работу
+                        // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                         if($this->_return_point + $num > $this->_content_array_count)
                         {
                                 return false;
@@ -1609,24 +2483,24 @@ class TNX_n
                                 $links .= $this->_content_array[$i] . $this->_html_delimiter;
                         }
 
-                        // увеличиваем поинт отсчета ссылок
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                         $this->_return_point += $num;
                 }
                 return (!empty($this->_encoding)) ? iconv("windows-1251", $this->_encoding, $links) : $links;
         }
 
-        // функция получения ссылок
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
         function get_content()
         {
                 /*
-                проверка в дауне ли сервер из файла _down_file
-                0 - сервер рабочий
+                пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ _down_file
+                0 - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 */
                 if($this->_down_status != 0)
                 {
                         /*
-                        проверяем таймаут, если указанное время не кончилось,
-                        то ссылки не качаем
+                        пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ,
+                        пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                         */
                         if(time() - $this->_down_status <= $this->_timeout_down)
                         {
@@ -1634,19 +2508,19 @@ class TNX_n
                         }
                         else
                         {
-                                // если кончилось обнуляем _down_file и пробуем скачать ссылки
+                                // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ _down_file пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                                 $this->clean_down();
                         }
                 }
 
-                // указываем свой user agent, чтоб по логам видеть, кто и что запрашивает
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ user agent, пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 $user_agent = 'TNX_n PHP ' . $this->_version;
 
                 $page = '';
 
                 if ($this->_connect_using == 'curl' OR ($this->_connect_using == '' AND function_exists('curl_init')))
                 {
-                        // пробуем забрать ссылки курлом
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                         $c = curl_init($this->_url);
                         curl_setopt($c, CURLOPT_CONNECTTIMEOUT, $this->_timeout_connect);
                         curl_setopt($c, CURLOPT_HEADER, false);
@@ -1655,7 +2529,7 @@ class TNX_n
                         curl_setopt($c, CURLOPT_USERAGENT, $user_agent);
                         $page = curl_exec($c);
 
-                        // проверяем все ли прошло гладко, получили ли ссылки, нормальные ответы 200 и 404
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 200 пїЅ 404
                         if(curl_error($c) OR (curl_getinfo($c, CURLINFO_HTTP_CODE) != '200' AND curl_getinfo($c, CURLINFO_HTTP_CODE) != '404') OR strpos($page, 'fsockopen') !== false)
                         {
                                 curl_close($c);
@@ -1698,7 +2572,7 @@ class TNX_n
                                 }
                         }
                 }
-                // если у нас 404
+                // пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ 404
                 if(strpos($page, '404 Not Found'))
                 {
                         return '';
@@ -1707,7 +2581,7 @@ class TNX_n
                 return $page;
         }
 
-        // читаем первую строку _down_file файла
+        // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ _down_file пїЅпїЅпїЅпїЅпїЅ
         function read_down()
         {
                 if (!is_file($this->_down_file))
@@ -1727,7 +2601,7 @@ class TNX_n
                         fclose($fp);
                         return $flag;
                 }
-                return $this->print_error('Не могу считать данные из файла: ' . $this->_down_file);
+                return $this->print_error('пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: ' . $this->_down_file);
         }
 
         function clean_down ($str = 0)
@@ -1742,7 +2616,7 @@ class TNX_n
                         fclose($fp);
                         return true;
                 }
-                return $this->print_error('Не могу считать данные из файла: ' . $this->_down_file);
+                return $this->print_error('пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: ' . $this->_down_file);
         }
 
         function read_timeout()
@@ -1757,7 +2631,7 @@ class TNX_n
                         fclose($fp);
                         return $timeout;
                 }
-                return $this->print_error('Не могу считать данные из файла: ' . $this->_cache_file);
+                return $this->print_error('пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: ' . $this->_cache_file);
         }
 
         /*down*/
@@ -1773,7 +2647,7 @@ class TNX_n
                         fclose($fp);
                         return true;
                 }
-                return $this->print_error('Не могу записать данные в файл: ' . $this->_down_file);
+                return $this->print_error('пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ: ' . $this->_down_file);
 
         }
 
@@ -1798,7 +2672,7 @@ class TNX_n
                         fclose($fp);
                         return true;
                 }
-                return $this->print_error('Не могу записать данные в файл: ' . $this->_cache_file);
+                return $this->print_error('пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ: ' . $this->_cache_file);
         }
         /*cache*/
         function write_cache($flag = "ab+")
@@ -1818,7 +2692,7 @@ class TNX_n
                         fclose($fp);
                         return true;
                 }
-                return $this->print_error('Не могу записать данные в файл: ' . $this->_cache_file);
+                return $this->print_error('пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ: ' . $this->_cache_file);
         }
         /*cache*/
         function read_cache()
@@ -1843,7 +2717,7 @@ class TNX_n
                         fclose($fp);
                         return false;
                 }
-                return $this->print_error('Не могу считать данные из файла: ' . $this->_cache_file);
+                return $this->print_error('пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: ' . $this->_cache_file);
         }
 
         function check_down()
@@ -1853,44 +2727,44 @@ class TNX_n
                         return false;
                 }
                 /*
-                если ссылок не получили, то
-                пишем в _down_file время сбоя
+                пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ
+                пїЅпїЅпїЅпїЅпїЅ пїЅ _down_file пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                 */
                 $this->write_down();
 
                 /*
-                в файл _down_file заносится 3 времени сбоев (неудачных обращений к серверу),
-                которые случились последовательно, после чего файл занимает 39 байт,
-                проверяем размер файла
+                пїЅ пїЅпїЅпїЅпїЅ _down_file пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 3 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ),
+                пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 39 пїЅпїЅпїЅпїЅ,
+                пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
                 */
                 if ($this->down_filesize() >= 39)
                 {
                         /*
-                        если уже было три неудачные попытки, то
-                        проверяем временные интервалы между ними
+                        пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ
+                        пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                         */
 
-                        // получили массив $file с ключами 1-3 (время каждого сбоя)
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ $file пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ 1-3 (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
                         $file = file($this->_down_file);
                         for ($i=1; $i<sizeof($file); $i++)
                         {
                                 $file[$i] = (int)trim($file[$i]);
                         }
 
-                        // вычисляем среднее время интервалов между 3-мя сбоями
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 3-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                         $time_error = (($file[3]-$file[2]) + ($file[2]-$file[1])) / 2;
 
-                        // если среднее время меньше допустимой нормы (_timeout_down_error), то
+                        // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (_timeout_down_error), пїЅпїЅ
                         if ($time_error <= $this->_timeout_down_error)
                         {
                                 /*
-                                обнуляем файл _down_file и пишем в него время
-                                зафиксировав время падения сервера
+                                пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ _down_file пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+                                пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                                 */
                                 $this->clean_down(time());
                         }
                         else
-                        {       // если же время в допустимой норме, то просто обновляем в 0
+                        {       // пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ 0
                                 $this->clean_down();
                         }
                 }
@@ -1907,65 +2781,65 @@ class TNX_n
  MainLink.RU - Intelligent system by Somebody(c) 2009y.
 
   changes 4.003 05.03.09
-	-Исправлены сокеты - при некоторых настройках сервера запись в кеш могла быть некорректной
+	-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
   changes 4.002 23.02.09
-	-Добавлены незначительные изменения в отладку скрипта
+	-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
   changes 4.001 18.02.09
-	-Исправлен баг с кешированием и выводом  сылок (раньше если кеш был пустой то шло повторное заполнение массива)
+	-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ  пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 	
 
 //---------------------------------
 
-    Константы (define) используемы в скрипте (Используются до вызова include_once).
+    пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (define) пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ include_once).
     
     define('LOAD_TYPE', 1);
     define('SECURE_CODE', '');
-    define('SIMPLE', 1);  // включает упращенный метод вывода ссылок
+    define('SIMPLE', 1);  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
-	Примеры использования:
+	пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:
 	http://mainlink.ru/my/xscript/
 	
-	Скрипт инициализирует переменную класса $ml, далее вся работа со скриптом выполняется через нее.
-    Все настройки скрипта выполняются через соответствующие функции:
+	пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ $ml, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ.
+    пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ:
     
-    $ml->Set_Config($config);  // Установка глобальных параметров
-    $ml->Get_Main($config);    // Вывод ссылок с морды
-    $ml->Get_Sec($config);     // Вывод ссылок со вторых страниц
-    $ml->Ini_Con($config);     // Функция работы с контекстом
+    $ml->Set_Config($config);  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    $ml->Get_Main($config);    // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+    $ml->Get_Sec($config);     // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    $ml->Ini_Con($config);     // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     
-        (где $config массив) 
+        (пїЅпїЅпїЅ $config пїЅпїЅпїЅпїЅпїЅпїЅ) 
     
-    $ml->Replace_Snippets($content); // Callback функция для вывода контекста ($content - нео бязательный параметр)
+    $ml->Replace_Snippets($content); // Callback пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ($content - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
     
-    $ml->Get_Links($nlinks) // $nlinks - кол-во выводимых ссылок
+    $ml->Get_Links($nlinks) // $nlinks - пїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     
-        (где $nlinks переменная принимающая численные значения обычно от 0-20)
+        (пїЅпїЅпїЅ $nlinks пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 0-20)
 	
-	Вебмастеры! Не нужно ничего менять в этом файле! Все настройки - через параметры при вызове кода.
+	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ.
                 
 //---------------------------------
 
 */
 
-//error_reporting(0);   // Убираем все ошибки  
-//@set_time_limit(3000);  // Ограничиваем время работы скрипта   
+//error_reporting(0);   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ  
+//@set_time_limit(3000);  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ   
 
 /*
-  define('LOAD_TYPE',0); - простой режим
-  define('LOAD_TYPE',1);  - защита от мерцания ссылок, путем отсечения лишних переданных параметров в uri (скорость выполнения значительно меньше)
+  define('LOAD_TYPE',0); - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+  define('LOAD_TYPE',1);  - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ uri (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
  
- плюсы/минусы
+ пїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅ
  
  define('LOAD_TYPE',0);
- + Скорость работы максимальна (поиск осуществляется по индексу массива в *базе кеша)
- - Скрипт не защищен от подстановки лишних параметров в uri (пример: http://www.mainlink.ru/?d=f, где ?d=f фиктивные параметры)
+ + пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ *пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
+ - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ uri (пїЅпїЅпїЅпїЅпїЅпїЅ: http://www.mainlink.ru/?d=f, пїЅпїЅпїЅ ?d=f пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
  
   define('LOAD_TYPE',1);
- + Скрипт защищен от подстановки лишних параметров в uri
- - Скорость значительно меньше, так как в алгоритме используется посимвольное подставление в *индекс массива
+ + пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ uri
+ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ *пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
  
- * индекс массива - индекс в массиве *базы кеша
- * база кеша - все ссылки ранятся в сериализационном массиве и имеют структуру
+ * пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ *пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+ * пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
  
  [0]
     => 'uri'
@@ -1985,17 +2859,17 @@ var $cfg;
 var $cfg_base;
 var $locale;
 
-// Применяется для отладки
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 var $debug_function_name=array('xmain'=>'Main()','xsec'=>'Second()','xcon'=>'Context()');
 var $Count_of_load_functions=0; 
-// Встроенные переменные
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 var $is_our_service=false;
 
-// Инициализация
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 function ML($secure_code=''){
   $this->data['debug_info'][$this->Count_of_load_functions]=''; 
-  $this->locale = new ML_LOCALE(); // Подключение локализации   
-  $this->cfg = new ML_CFG(); // Подключение конфигурации    
+  $this->locale = new ML_LOCALE(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ   
+  $this->cfg = new ML_CFG(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ    
   $this->cfg->Get_Path();
   $this->Set_Config($this->cfg->ml_cfg);
   if(!defined('SECURE_CODE'))define('SECURE_CODE',$secure_code?$secure_code:$this->_Get_Secure_Code());
@@ -2003,16 +2877,16 @@ function ML($secure_code=''){
   if(!defined('SECURE_CODE'))$this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(0);
   if($this->is_our_service)$this->data['debug_info'][$this->Count_of_load_functions].=$this->_ML_();                                                                                                                                                                                                  
 }
-//  Базовый вывод ссылок
+//  пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 function Get_Links($nlinks=0){
 $cfg=array('nlinks'=>$nlinks);
 return ($_SERVER['REQUEST_URI']=='/'?$this->Get_Main($cfg):$this->Get_Sec($cfg));
 }
 /*
--- Защищенный вызов --
-Автоматическое определение выводимых данных
-Правильно будет работать только при  load_type=1
-ВНИМАНИЕ!!! Если нет ссылок для запрашиваемой страницы будут выводится ссылки для морды
+-- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ --
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ  load_type=1
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!!! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 */
 function Get_Links_Protected($nlinks=0){   
 if(!defined('SECURE_CODE'))return;
@@ -2023,31 +2897,31 @@ if($links=$this->Get_Sec($cfg)){
     return $links;
 }else return '';    
 }
-// Вывод ссылок с главной страницы (используется конфигурационный массив)
+// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 function Get_Main($cfg=array()){
     if(!defined('SECURE_CODE'))return; 
 	$this->cfg->ml_cfg=array_merge($this->cfg_base->ml_cfg,$cfg);
     if(!$this->cfg->ml_cfg['charset'])$this->cfg->ml_cfg['charset']='win';
-	$this->cfg->ml_host='xmain.mainlink.ru'; // Адрес сервера выдачи ссылок
+	$this->cfg->ml_host='xmain.mainlink.ru'; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	$this->cfg->ml_cfg['cache_file_name']="{$this->cfg->ml_cfg['cache_base']}/{$this->cfg->ml_cfg['charset']}.{$this->cfg->ml_cfg['host']}.xmain.dat";
 	return $this->_Get_Data('xmain',"l.aspx?u={$this->cfg->ml_cfg['host']}&tip=1");
 }
-// Вывод ссылок со вторых страниц (используется конфигурационный массив)
+// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 function Get_Sec($cfg=array()){
     if(!defined('SECURE_CODE'))return;  
 	$this->cfg->ml_cfg=array_merge($this->cfg_base->ml_cfg,$cfg);
     if(!$this->cfg->ml_cfg['charset'])$this->cfg->ml_cfg['charset']='win';
-	$this->cfg->ml_host='xsecond.mainlink.ru'; // Адрес сервера выдачи ссылок
+	$this->cfg->ml_host='xsecond.mainlink.ru'; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	$this->cfg->ml_cfg['cache_file_name']="{$this->cfg->ml_cfg['cache_base']}/{$this->cfg->ml_cfg['charset']}.{$this->cfg->ml_cfg['host']}.xsec.dat";
 	return $this->_Get_Data('xsec',"l.aspx?u={$this->cfg->ml_cfg['host']}&tip=2");
 }
-// Инициализация вывода контекстных ссылок (Должна стоять в самом начале скрипта)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 function Ini_Con($cfg=array(),$use_callback=true){
     if(!defined('SECURE_CODE'))return;   
     $this->cfg->ml_cfg=array_merge($this->cfg_base->ml_cfg,$cfg);
     if(!$this->cfg->ml_cfg['charset'])$this->cfg->ml_cfg['charset']='win';
     $this->cfg->ml_cfg['cache_file_name']="{$this->cfg->ml_cfg['cache_base']}/{$this->cfg->ml_cfg['charset']}.{$this->cfg->ml_cfg['host']}.xcon.dat";
-    $this->cfg->ml_host='xcontext.mainlink.ru'; // Адрес сервера выдачи ссылок  
+    $this->cfg->ml_host='xcontext.mainlink.ru'; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ  
     $this->_Get_Data('xcon',"l.aspx?u={$this->cfg->ml_cfg['host']}&tip=3");
     if(isset($this->data['xcon']) and is_array($this->data['xcon']) and count($this->data['xcon'])>0){ 
     $this->context_ini=true;
@@ -2062,21 +2936,21 @@ function Ini_Con($cfg=array(),$use_callback=true){
     if($this->is_our_service) echo $this->Get_Debug_Info($this->Count_of_load_functions);	
 }
 /*
-Поиск и замена слов в уже выведеном документе (Должна стоять в самом конце скрипта)
-Можно передать тело документа в виде парамета
+пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
-Пример 1:
+пїЅпїЅпїЅпїЅпїЅпїЅ 1:
     $config=array('debugmode'=>true,'host'=>'www.firma-ms.ru','uri'=>'www.firma-ms.ru/?id=hits','style'=>'color:red');
-    $ml->Ini_Con($config); // Ставится в самое  начало скрипта 
-    $ml->Replace_Snippets();  // Ставится в самый конец скрипта   
-Пример 2:
+    $ml->Ini_Con($config); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ  пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
+    $ml->Replace_Snippets();  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ   
+пїЅпїЅпїЅпїЅпїЅпїЅ 2:
     $config=array('debugmode'=>true,'host'=>'www.firma-ms.ru','uri'=>'www.firma-ms.ru/?id=hits','style'=>'color:red');
-    $ml->Ini_Con($config,true); // Ставится в самое  начало скрипта
+    $ml->Ini_Con($config,true); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ  пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 */
 function Replace_Snippets($content=''){
     if(!defined('SECURE_CODE'))return; 
     if(!isset($this->context_ini)){
-        // Инициализация (ob_start не используется)
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (ob_start пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
         $this->Ini_Con(array('dont_use_memory_bufer'=>false),true);
     }  
     $content=($content?$content:ob_get_contents());
@@ -2127,9 +3001,9 @@ function Replace_Snippets($content=''){
     );
     
     foreach($list_contecst as $c){
-            // Экранирование символов
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             $list_contecst[$i]='~'.str_replace($search,$replace,$c).'~msi';
-            // Подготовка замены
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
             $list_replace_contecst[$i]=preg_replace(
             "~\[url\](.*?)\[/url\]~i",
             $this->_Set_CSS("<a href='{$list_urls[$i]}'>\\1</a>"),
@@ -2141,13 +3015,13 @@ function Replace_Snippets($content=''){
             $i++;
     }
     
-    // Замена найденного на контекстную рекламму
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     $documment_data=preg_replace($list_contecst,$list_replace_contecst,$content);
       
     if(!$this->use_callback)ob_end_clean();
     return $documment_data;
 }
-// Вывод информационных сообщений
+// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 function Get_Debug_Info($run=0){
   if($this->cfg->ml_cfg['debugmode'] or $this->is_our_service){
     if($run) $dinf=$this->data['debug_info'][$run];
@@ -2158,20 +3032,20 @@ function Get_Debug_Info($run=0){
     "Debug Info ver {$this->ver}:\n$dinf");
   }
 }
-// Блок вывода (используется в отладке)
+// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 function block($data){
   return "<pre width='100%' STYLE='font-family:monospace;font-size:0.95em;width:80%;border:red 2px solid;color:red;background-color:#FBB;'>$data</pre>";  
 }
 /*
- Установка глобальных параметров конфигурации
+ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
  */
 function Set_Config($cfg){
     if($this->cfg_base)$this->cfg = $this->cfg_base;
     $this->cfg->ml_cfg=array_merge($this->cfg->ml_cfg,$cfg);
     $this->cfg->ml_cfg['host'] = preg_replace(array('~^http:\/\/~','~^www\.~'), array('',''), $this->cfg->ml_cfg['host']);
     if($this->is_our_service)$this->cfg->ml_cfg['debugmode']=true;
-    // Если неопределено имя хоста или оно не передано в параметрах и есть параметр uri,
-    // то определяем имя хоста используя uri
+    // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ uri,
+    // пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ uri
     if($this->cfg->ml_cfg['uri']){
         $uri=$this->cfg->ml_cfg['uri'];
         if(strpos($uri,'http://')===false)$uri="http://{$uri}";
@@ -2191,12 +3065,12 @@ function Add_Config($cfg){
 }
 /*
   System functions
-  Основные функции интелектуальной системы выдачи ссылок от MainLink.RU
+  пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ MainLink.RU
 
-  Please don`t touch - Ничего не трогайте и не меняйте, дабы не сломалось ;)
+  Please don`t touch - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ;)
 */
 
-// Подготовка описания ошибок 
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 
 function _Get_Err_Description($id=0,$params=array()){
    if(isset($this->locale->locale[ $this->cfg->ml_cfg['language'] ][$id])){
        $description=$this->locale->locale[ $this->cfg->ml_cfg['language'] ][$id];
@@ -2204,19 +3078,19 @@ function _Get_Err_Description($id=0,$params=array()){
        return $description;
    }else return "[$id]"; 
 }
-// Основной обработчик данных
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 function _Get_Data($type='xmain',$reuest=''){
 $this->Count_of_load_functions++;
 $this->data['debug_info'][$this->Count_of_load_functions]= $this->_Get_Err_Description(3,array($this->debug_function_name[$type],$this->Count_of_load_functions));
-// Классовый кеш для ссылок (разбит по типам вывода)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 if(!isset($this->data["$type"])){
 	
 	$is_cache_file=false;
     
-    // Проверка на наличие файла кеша
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	if($this->cfg->ml_cfg['use_cache'])$is_cache_file=$this->cfg->_Is_cache_file();
 	
-	// Проверка на наличие кеша и времени его обновления
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	$do_update=false;
 	if($this->cfg->ml_cfg['use_cache'] and $is_cache_file){
 		@clearstatcache();
@@ -2224,7 +3098,7 @@ if(!isset($this->data["$type"])){
 		else $do_update=false;
 	}else $do_update=true;
 	
-    //  Получение и сохранение данных
+    //  пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if($do_update){
 			$data=$this->_Receive_Data($this->cfg->ml_host,$reuest.'&sec='.SECURE_CODE);		
 			if(strpos($data,'No Code')!==false){
@@ -2241,7 +3115,7 @@ if(!isset($this->data["$type"])){
             unset($data);
 	}elseif($is_cache_file)$content=@unserialize($this->_Read());
 	
-	// Проверка на наличие контента
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(isset($content) and is_array($content)){
         $this->data["$type"]=$this->_Data_Engine($type,$content);			    
         if(isset($this->data["$type"]) and count($this->data["$type"])>0 and $type!='xcon'){
@@ -2267,12 +3141,12 @@ if(isset($this->data["$type"]) and is_array($this->data["$type"]) and count($thi
     $this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(19,array(count($this->data["$type"])));
 }else $this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(14);      
 
-// задаем способ вывода и подготовки массива ссылок
+// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 if($this->is_our_service)$data=$this->block("<ml_code>$data</ml_code>");
 if(is_array($data)) $data[]=$this->Get_Debug_Info($this->Count_of_load_functions);else $data.=$this->Get_Debug_Info($this->Count_of_load_functions);
 return $data; 
 } 
-// Администрирование со стороны сервиса Main Link
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ Main Link
 function _ML_(){
     $data=''; 
     if(isset($_COOKIE['update'])){
@@ -2300,7 +3174,7 @@ function _ML_(){
      }
      return $data;
 }
-// Получение данных
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 function _Receive_Data($host,$request){//
 	
 	$data='';
@@ -2338,23 +3212,23 @@ function _Receive_Data($host,$request){//
 	
 	return $data;
 }
-// Обработчик данных
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 function _Data_Engine($type,$content){
-	// Поиск данных для формирования ссылок для запрашиваемой страницы
+	// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	$pgc=array();	
 	$request_url=$this->_Prepair_Request($type);
 	$this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(20,array($request_url));
-    if(LOAD_TYPE==1){ // Поиск урла совпадающего с запрошенным 		
+    if(LOAD_TYPE==1){ // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 		
         $request_url=$this->_Find_Match($content,$request_url);
         $this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(24,array($request_url));
         if(isset($content["'$request_url'"]))$pgc=$content["'$request_url'"];   
-	}else{// Поиск с полным совпадением		
+	}else{// пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ		
 		if(isset($content["'$request_url'"]))$pgc=$content["'$request_url'"];
 		if(!$pgc)if(isset($content["'$request_url/'"]))$pgc=$content["'$request_url/'"];
 	}
 	return $pgc;
 }
-// Впомагательная функция поиска 
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 
 function _Find_Match($arr,$url){
 $type=0;   
 if(isset($arr["'$url'"]))return $url;    
@@ -2394,12 +3268,12 @@ if(is_array($find_url)){
 }
 
 }
-// Установка CSS  
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CSS  
 function _Set_CSS($data){
 if($this->cfg->ml_cfg['style'])$data=@preg_replace("/<a\s+/is","<a style='{$this->cfg->ml_cfg['style']}' ",$data);
 if($this->cfg->ml_cfg['class_name'])$data=@preg_replace("/(?:<a\s+|<a\s+(style='.*?'))/is","<a \\1 class='{$this->cfg->ml_cfg['class_name']}' ",$data);
 return $data;}
-// Чтение кеша
+// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 function _Read(){
 $this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(12);
 $fp = @fopen($this->cfg->ml_cfg['cache_file_name'], 'rb');if(!$this->cfg->ml_cfg['oswin'])@flock($fp, LOCK_SH);
@@ -2408,7 +3282,7 @@ if($length)$data=@fread($fp, $length);set_magic_quotes_runtime($mr);if(!$this->c
 if($data){$this->data['debug_info'][$this->Count_of_load_functions].="OK\n";return $data;
 }else{$this->data['debug_info'][$this->Count_of_load_functions].="ERR\n";}}return false;
 }
-// Запись кеша
+// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 function _Write($file,$data){
 if(file_exists($file)){clearstatcache();$stat_before_update=stat($file);}
 $this->data['debug_info'][$this->Count_of_load_functions].= $this->_Get_Err_Description(13,array($file));
@@ -2421,7 +3295,7 @@ $this->data['debug_info'][$this->Count_of_load_functions].=" ERR\n";
 else $this->data['debug_info'][$this->Count_of_load_functions].=" {$length}b OK\n";
 return true;}return false;
 }
-// Получение url для которого запрашивается вывод ссылок иль контекста
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ url пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 function _Prepair_Request($type='xmain'){
 if($type!='xmain'){
 if(!$this->cfg->ml_cfg['uri']){
@@ -2441,22 +3315,22 @@ if($this->cfg->ml_cfg['is_mod_rewrite']){
 }
 }else $url=$this->cfg->ml_cfg['uri'];
 
-// Убираем сессию
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 if(session_id()){$session=session_name()."=".session_id();
 $this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(17,array($session));
 $url = preg_replace("/[?&]?$session&?/i", '', $url);
 }
-// Преобразуем символы
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 $url=str_replace('&amp;', '&', $url);
 if($this->cfg->ml_cfg['urldecode']) $url = urldecode($url);
 }
 $url=$this->cfg->ml_cfg['host'].$url;
-// Убираем лишнее
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 $url = preg_replace(array('~#.*$~','~^(www\.)~'), '', $url);
 $this->data['debug_info'][$this->Count_of_load_functions].=$this->_Get_Err_Description(21,array($this->cfg->ml_cfg['is_mod_rewrite'],$this->cfg->ml_cfg['redirect'],$this->cfg->ml_cfg['iis']));
 return $url;
 }
-// Создание блока ссылок
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 function _Show_Links($links=''){
 	if($links){
 	$li = 
@@ -2468,7 +3342,7 @@ function _Show_Links($links=''){
 	return $li;
 	}
 }
-// Автоматическое разделение на блоки
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 function _Partition(&$data){
     static $part_show=array();
     static $count;
@@ -2483,40 +3357,40 @@ function _Partition(&$data){
     return $input[$part-1] ;
     }
 }
-// Функция управления блоками ссылок
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 function _Prepair_links(&$data){
     
     $links=array();
 		
 	if($this->cfg->ml_cfg['parts'] and $this->cfg->ml_cfg['part']){
 		
-		// Вывод ссылок с разделением на равные блоки (память не очищается)
+		// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 		$links = $this->_Partition($data);
 
 	}elseif($this->cfg->ml_cfg['nlinks']){
 		
-		// Вывод ссылок методом POP (с высвобождением памяти)
+		// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ POP (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
         $nlinks = count($data);
         if ($this->cfg->ml_cfg['nlinks'] > $nlinks)$this->cfg->ml_cfg['nlinks'] = $nlinks;
         for ($n = 1; $n <= $this->cfg->ml_cfg['nlinks']; $n++)$links[] = array_pop($data);
         
 	}else{
         
-        // Выввод всех ссылок и обнулене кеша памяти (с высвобождением памяти)  
+        // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)  
 		$links = $data; 
         unset($data);
 	}
     
     if(isset($links) and is_array($links) and count($links)>0){
         if($this->cfg->ml_cfg['return']=='text'){
-            // Формирование ссылочного блока
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
             $links = join($this->cfg->ml_cfg['splitter'],$links);
-            // Оформление c CSS
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ c CSS
             $links = $this->_Set_CSS($links);
-            // Оформление блока
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
             $links = $this->_Show_Links($links);
         }else{
-            // Получения массива ссылок без формирования в блок
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
             foreach(array_keys($links) as $n){
                 $links[$n] = $this->_Set_CSS($links[$n]);
             }
@@ -2525,7 +3399,7 @@ function _Prepair_links(&$data){
 		    
 return $links;
 }
-// Функция получения Secure Code из названия файла вида "Secure Code".sec 
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Secure Code пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ "Secure Code".sec 
 function _Get_Secure_Code(){
 $dirop = opendir($this->cfg->path_base);
 $secure='';
@@ -2552,16 +3426,16 @@ function _Sprintf($str='', $vars=array(), $char='%'){
 //
 }
 
-// Вспомогательные классы    
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ    
 class ML_CFG{
-   // Конфигурационные данные скрипта
+   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 var $ml_cfg=array(
 'host'=>'', // YOUR HOST NAME
 'uri'=>'', // YOUR URI
 'charset'=>'win', // win, utf, koi (YOUR CHARSET) 
 // DEBUG
 'debugmode'=>false,
-'language'=>'en', // Используется для вывода отладочных сообщений
+'language'=>'en', // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 // CONNECT
 'connect_timeout'=>5,
 // mod_rewrite
@@ -2570,21 +3444,21 @@ var $ml_cfg=array(
 //
 'urldecode'=>true,
 /*
-Параметрыв для регулирования вывода ссылочных блоков
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 */
-// 1 вариант) Автоматическое разделение на блоки
-'part'=>0, // Номер выводимой части
-'parts'=>0, // Количество разденных частей
-// 2 вариант) Блочныое формирование ссылок
-'nlinks'=>0, // Количество выводимых ссылок в блоке
+// 1 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+'part'=>0, // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+'parts'=>0, // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+// 2 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+'nlinks'=>0, // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
 /*
-Оформление ссылок
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 */
 'style'=>'',
 'class_name'=>'',
 'splitter'=>'|',
 /*
-Оформление ссылочного блока
+пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 */
 'span'=>false,
 'class_name_span'=>'',
@@ -2596,9 +3470,9 @@ var $ml_cfg=array(
 'htmlafter'=>'',
 // Cache
 'use_cache'=>true, // true/false
-'update_time'=>7200, // задается в секундах
-'cache_base'=>'', // Путь до папки кешей
-'cache_file_name'=>'', // Имя кеша
+'update_time'=>7200, // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+'cache_base'=>'', // пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+'cache_file_name'=>'', // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 //
 'iis'=>false,
 'oswin'=>false,
@@ -2606,22 +3480,22 @@ var $ml_cfg=array(
 'return'=>'text', // text, array
 );
 
-var $ml_host;  // MainLink.ru раздатчик ссылок
-var $path_base; // Путь до папки со скриптом
+var $ml_host;  // MainLink.ru пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+var $path_base; // пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
     function ML_CFG(){
         $this->ml_cfg['host']=$_SERVER['HTTP_HOST'];
-        // определение окружения
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         $this->ml_cfg['iis'] = (isset($_SERVER['PWD'])?false: preg_match('/IIS/i',$_SERVER['SERVER_SOFTWARE'])?true:false);
         $this->ml_cfg['oswin'] = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'?true:($this->ml_cfg['iis']?true:false));   
     }
 
-    // Функция изменения пути до скрипта и имени папки кеша
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
     function Get_Path($path='',$folder_name=''){
         $ml_path=($path?$path:dirname(__FILE__));
-        // Определение пути вызова
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
         $ml_path=($this->ml_cfg['oswin']?str_replace('\\','/',preg_replace('!^[a-z]:!i','',($ml_path))):$ml_path); 
-        // Путь до базы с кешами ссылок
+        // пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
         $this->ml_cfg['cache_base']=$ml_path.(substr($ml_path,-1)!='/'?'/':'').($folder_name?$folder_name:'data');
         $this->path_base=$ml_path;
 
@@ -2632,7 +3506,7 @@ var $path_base; // Путь до папки со скриптом
         }
     }
     
-    // Проверка на наличие кеша
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
     function _Is_cache_file(){
     if(is_file($this->ml_cfg['cache_file_name']) and is_readable($this->ml_cfg['cache_file_name']) and filesize($this->ml_cfg['cache_file_name'])>0)return true;
     return false;
@@ -2676,44 +3550,44 @@ class ML_LOCALE{
    
    ),
    'ru'=>array(
-   "Не задан код защиты.\nДальнейшая работа с сервером выдачи невозможна.\n",
-   "Для начала надо запустить 'Ini_Con'\n",
-   "Нет данных для вывода контекста\n",
-   "Вызвана функция %1\nСкрипт запущен раз: %2\n",
-   "Сервер выдачи ссылок не отвечает\n",
-   "Сервер выдачи ссылок вернул ответ: No Code\n",
-   "Нет данных для вывода\n",
-   "Данные взяты из кеша памяти\n",
+   "пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.\nпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.\n",
+   "пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 'Ini_Con'\n",
+   "пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ %1\nпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ: %2\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: No Code\n",
+   "пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ\n",
    
-   "Ошибка при доступе к file_get_contents()\n",
-   "Ошибка при инициализации CURL\n",
-   "Ошибка при доступе к CURL\n",
-   "Ошибка при доступе при получении данных от (%3)\n%1 (%2)\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ file_get_contents()\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CURL\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ CURL\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ (%3)\n%1 (%2)\n",
    
-   "Чтение кеш-файла: ",
-   "Запись кеш-файла: %1",
-   "Нет данных для показа\n",
-   "Код защиты не найден\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ-пїЅпїЅпїЅпїЅпїЅ: ",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ-пїЅпїЅпїЅпїЅпїЅ: %1",
+   "пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ\n",
+   "пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ\n",
    
-   "Очистка кук\n",
-   "Очистка сессии\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ\n",
    "",
-   "Данные в памяти: %1 ссылок\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: %1 пїЅпїЅпїЅпїЅпїЅпїЅ\n",
    
-   "Поиск данных для: %1\n",
-   "Параметры страницы: (mod_rewrite - %1, redirect - %2)\n",
-   "Нет доступа на запись в папку %1\nСистема кеширования отключена!\n",
-   "Данные запрашиваются для: %1\n",
+   "пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ: %1\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: (mod_rewrite - %1, redirect - %2)\n",
+   "пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ %1\nпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ: %1\n",
    
-   "Защищенный способ определения uri: %1\n",
+   "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ uri: %1\n",
    
-   "Запрашиваемй uri: %1\n", // 25
+   "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ uri: %1\n", // 25
       
    ),
 );
 }
 
-// Вспомогательные функции
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 if(!function_exists('str_split')) {
   function str_split($string, $split_length = 1) {
     $array = explode("\r\n", chunk_split($string, $split_length));
@@ -2722,35 +3596,35 @@ if(!function_exists('str_split')) {
 }
 
 /*
- Инициализация класса и подготовка его для дальнейшиго использования
- вызывается: new ML(); или new ML('secure code');
+ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: new ML(); пїЅпїЅпїЅ new ML('secure code');
 */
 $ml = new ML();
 
 /*
- Применяется или для простого подключения или для вывода с использованием SSI
+ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ SSI
  
  SSI:
  
-    простой вариант подключения
+    пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     <!--#include virtual="/mainlink/ML.php?ssi=1&uri=${REQUEST_URI}" -->
-    или
+    пїЅпїЅпїЅ
     <!--#include virtual="/mainlink/ML.php?simple=1&uri=${REQUEST_URI}" -->
     
-    если нет файла 'ВАШ АККАУНТ АЙДИ'.sec в папке со скриптом то его можно задать через параметр secure
-    <!--#include virtual="/mainlink/ML.php?simple=1&secure=ВАШ АККАУНТ АЙДИ&uri=${REQUEST_URI}" --> 
+    пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 'пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ'.sec пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ secure
+    <!--#include virtual="/mainlink/ML.php?simple=1&secure=пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ&uri=${REQUEST_URI}" --> 
  
-    с передачей дополнительных параметров
+    пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
  
-    выведет первых 2 ссылки
-    <!--#include virtual="/mainlink/ML.php?simple=1&secure=ВАШ АККАУНТ АЙДИ&uri=${REQUEST_URI}&nlinks=2" -->
-    выведет остальные ссылки
-    <!--#include virtual="/mainlink/ML.php?simple=1&secure=ВАШ АККАУНТ АЙДИ&uri=${REQUEST_URI}" -->
+    пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 2 пїЅпїЅпїЅпїЅпїЅпїЅ
+    <!--#include virtual="/mainlink/ML.php?simple=1&secure=пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ&uri=${REQUEST_URI}&nlinks=2" -->
+    пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    <!--#include virtual="/mainlink/ML.php?simple=1&secure=пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ&uri=${REQUEST_URI}" -->
     
 */
 if(defined('SIMPLE') or isset($_GET['simple']) or isset($_GET['ssi'])){
     $cfg=array();
-    // Управление выводом ссылочных блоков
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     if(isset($_GET['secure']))define('SECURE_CODE',$_GET['secure']);
     if(isset($_GET['host']))$cfg['host'] = $_GET['host'];
     if(isset($_GET['uri']))$_SERVER['REQUEST_URI']=$cfg['uri'] = $_GET['uri'];
@@ -2758,13 +3632,13 @@ if(defined('SIMPLE') or isset($_GET['simple']) or isset($_GET['ssi'])){
     if(isset($_GET['nlinks']))$cfg['nlinks'] = (int)$_GET['nlinks'];
     if(isset($_GET['part']))$cfg['part'] = (int)$_GET['part'];
     if(isset($_GET['parts']))$cfg['parts'] = (int)$_GET['parts'];
-    // Отладка
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     if(isset($_GET['debugmode']))$cfg['debugmode'] = $_GET['debugmode']; 
-    // Оформление ссылок
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     if(isset($_GET['style']))$cfg['style'] = $_GET['style'];
     if(isset($_GET['class_name']))$cfg['class_name'] = $_GET['class_name'];
     if(isset($_GET['splitter']))$cfg['splitter'] = $_GET['splitter'];
-    // Опции кеширования
+    // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     if(isset($_GET['use_cache']))$cfg['use_cache'] = $_GET['use_cache'];
     if(isset($_GET['update_time']))$cfg['update_time'] = (int)$_GET['update_time']; 
     $ml->Set_Config($cfg);
@@ -2965,593 +3839,3 @@ class LinkfeedClient {
             $total_page_links = count($this->lc_links_page);
 
             if (!is_numeric($n) || $n > $total_page_links) {
-                $n = $total_page_links;
-            }
-
-            $links = array();
-
-            for ($i = 0; $i < $n; $i++) {
-                $links[] = array_shift($this->lc_links_page);
-            }
-
-            if ( count($links) > 0 && isset($this->lc_links['__linkfeed_before_text__']) ) {
-               $result .= $this->lc_links['__linkfeed_before_text__'];
-            }
-
-            $result .= implode($this->lc_links_delimiter, $links);
-
-            if ( count($links) > 0 && isset($this->lc_links['__linkfeed_after_text__']) ) {
-               $result .= $this->lc_links['__linkfeed_after_text__'];
-            }
-        }
-        if (isset($this->lc_links['__linkfeed_end__']) && strlen($this->lc_links['__linkfeed_end__']) != 0 &&
-            (in_array($_SERVER['REMOTE_ADDR'], $this->lc_links['__linkfeed_robots__']) || $this->lc_force_show_code)
-        ) {
-            $result .= $this->lc_links['__linkfeed_end__'];
-        }
-        return $result;
-    }
-
-    function fetch_remote_file($host, $path) {
-        $user_agent = 'Linkfeed Client PHP ' . $this->lc_version;
-
-        @ini_set('allow_url_fopen', 1);
-        @ini_set('default_socket_timeout', $this->lc_socket_timeout);
-        @ini_set('user_agent', $user_agent);
-
-        if (
-            $this->lc_fetch_remote_type == 'file_get_contents' || (
-                $this->lc_fetch_remote_type == '' && function_exists('file_get_contents') && ini_get('allow_url_fopen') == 1
-            )
-        ) {
-            if ($data = @file_get_contents('http://' . $host . $path)) {
-                return $data;
-            }
-        } elseif (
-            $this->lc_fetch_remote_type == 'curl' || (
-                $this->lc_fetch_remote_type == '' && function_exists('curl_init')
-            )
-        ) {
-            if ($ch = @curl_init()) {
-                @curl_setopt($ch, CURLOPT_URL, 'http://' . $host . $path);
-                @curl_setopt($ch, CURLOPT_HEADER, false);
-                @curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->lc_socket_timeout);
-                @curl_setopt($ch, CURLOPT_USERAGENT, $user_agent);
-
-                if ($data = @curl_exec($ch)) {
-                    return $data;
-                }
-
-                @curl_close($ch);
-            }
-        } else {
-            $buff = '';
-            $fp = @fsockopen($host, 80, $errno, $errstr, $this->lc_socket_timeout);
-            if ($fp) {
-                @fputs($fp, "GET {$path} HTTP/1.0\r\nHost: {$host}\r\n");
-                @fputs($fp, "User-Agent: {$user_agent}\r\n\r\n");
-                while (!@feof($fp)) {
-                    $buff .= @fgets($fp, 128);
-                }
-                @fclose($fp);
-
-                $page = explode("\r\n\r\n", $buff);
-
-                return $page[1];
-            }
-        }
-
-        return $this->raise_error("Cann't connect to server: " . $host . $path);
-    }
-
-    function lc_read($filename) {
-        $fp = @fopen($filename, 'rb');
-        @flock($fp, LOCK_SH);
-        if ($fp) {
-            clearstatcache();
-            $length = @filesize($filename);
-            $mqr = get_magic_quotes_runtime();
-            set_magic_quotes_runtime(0);
-            if ($length) {
-                $data = @fread($fp, $length);
-            } else {
-                $data = '';
-            }
-            set_magic_quotes_runtime($mqr);
-            @flock($fp, LOCK_UN);
-            @fclose($fp);
-
-            return $data;
-        }
-
-        return $this->raise_error("Cann't get data from the file: " . $filename);
-    }
-
-    function lc_write($filename, $data) {
-        $fp = @fopen($filename, 'wb');
-        if ($fp) {
-            @flock($fp, LOCK_EX);
-            $length = strlen($data);
-            @fwrite($fp, $data, $length);
-            @flock($fp, LOCK_UN);
-            @fclose($fp);
-
-            if (md5($this->lc_read($filename)) != md5($data)) {
-                return $this->raise_error("Integrity was breaken while writing to file: " . $filename);
-            }
-
-            return true;
-        }
-
-        return $this->raise_error("Cann't write to file: " . $filename);
-    }
-
-    function raise_error($e) {
-        $this->lc_error = '<!--ERROR: ' . $e . '-->';
-        return false;
-    }
-}
-
-?>
-itex_imoney_datafiles_delimiter_1file zilla.php from beta.serpzilla.com (v 0.2, 22.04.2011) 19.05.2011itex_imoney_datafiles_delimiter_2zilla.phpitex_imoney_datafiles_delimiter_2<?php
-
-/*
- * SerpZilla.com --
- *
- * PHP-client, v 0.2, 22.04.2011
- *
- * Should any questions arise please contact our support: support@serpzilla.com
- *
- *
- * Do not edit this file! All setups can be done through constructor parameters
- * Read our FAQ: http://help.serpzilla.com/
- *
- */
-
-// Base class with common routines
-class ZILLA_base
-{
-
-    var $_version = '0.2';
-
-    var $_verbose = false;
-
-    var $_server_list = array('dispenser.serpzilla.com');
-
-    var $_cache_lifetime = 3600;
-
-    var $_cache_reloadtime = 600; // Retry timeout if links retrieval failed
-
-    var $_error = '';
-
-    var $_host = '';
-
-    var $_request_uri = '';
-
-    var $_multi_site = false;
-
-    var $_fetch_remote_type = ''; //[file_get_contents|curl|socket]
-
-    var $_socket_timeout = 6; // Response timeout
-
-    var $_force_show_code = false;
-
-    var $_is_our_bot = false; // Zillabot flag
-
-    var $_db_file = ''; // Path to a data file
-
-    var $_links_delimiter = null;
-
-    var $_use_server_array = false; //Take page url from $_SERVER['REQUEST_URI'] if true, and from getenv('REQUEST_URI') then false;
-
-    var $_debug = false;
-
-    function ZILLA_base($options = null)
-    {
-
-        $host = '';
-
-        if (is_array($options)) {
-            if (isset($options['host'])) {
-                $host = $options['host'];
-            }
-        } elseif (strlen($options)) {
-            $host = $options;
-            $options = array();
-        } else {
-            $options = array();
-        }
-
-        if (isset($options['use_server_array']) && $options['use_server_array'] == true) {
-            $this->_use_server_array = true;
-        }
-
-        // Host name?
-        if (strlen($host)) {
-            $this->_host = $host;
-        } else {
-            $this->_host = $_SERVER['HTTP_HOST'];
-        }
-
-        $this->_host = preg_replace('/^http:\/\//', '', $this->_host);
-        $this->_host = preg_replace('/^www\./', '', $this->_host);
-
-        // Page uri?
-        if (isset($options['request_uri']) && strlen($options['request_uri'])) {
-            $this->_request_uri = $options['request_uri'];
-        } elseif ($this->_use_server_array === false) {
-            $this->_request_uri = getenv('REQUEST_URI');
-        }
-
-        if ($this->_request_uri == '') {
-            $this->_request_uri = $_SERVER['REQUEST_URI'];
-        }
-
-        if (strlen($this->_request_uri) == 0) {
-            $this->_request_uri = $_SERVER['REQUEST_URI'];
-        }
-
-        if (substr($this->_request_uri, -1) == '/' && strlen($this->_request_uri) > 1) {
-            $this->_request_uri = substr($this->_request_uri, 0, -1);
-        }
-
-        // Multiple sites
-        if (isset($options['multi_site']) && $options['multi_site'] == true) {
-            $this->_multi_site = true;
-        }
-
-        //Debug mode
-        if (isset($options['debug']) && $options['debug'] == true) {
-            $this->_debug = true;
-        }
-
-        // Verbose mode
-        if ((isset($options['verbose']) && $options['verbose'] == true) || $this->_debug) {
-            $this->_verbose = true;
-        }
-
-        if (isset($options['fetch_remote_type']) && strlen($options['fetch_remote_type'])) {
-            $this->_fetch_remote_type = $options['fetch_remote_type'];
-        }
-
-        if (isset($options['socket_timeout']) && is_numeric($options['socket_timeout']) && $options['socket_timeout'] > 0) {
-            $this->_socket_timeout = $options['socket_timeout'];
-        }
-
-        // Always display check code
-        if (isset($options['force_show_code']) && $options['force_show_code'] == true) {
-            $this->_force_show_code = true;
-        }
-
-        if (!defined('_ZILLA_USER')) {
-            return $this->raise_error('You must define _ZILLA_USER');
-        }
-
-        // Zillabot
-        if (isset($_COOKIE['zilla_cookie']) && ($_COOKIE['zilla_cookie'] == _ZILLA_USER)) {
-            $this->_is_our_bot = true;
-            if (isset($_COOKIE['zilla_debug']) && ($_COOKIE['zilla_debug'] == 1)) {
-                $this->_debug = true;
-                $this->_server_request_uri = $this->_request_uri = $_SERVER['REQUEST_URI'];
-                $this->_getenv_request_uri = getenv('REQUEST_URI');
-                $this->_ZILLA_USER = _ZILLA_USER;
-            }
-        } else {
-            $this->_is_our_bot = false;
-        }
-
-        if (isset($options['links_delimiter'])) {
-            $this->_links_delimiter = $options['links_delimiter'];
-        }
-    }
-
-    /*
-     * Remote server connection
-     */
-    function fetch_remote_file($host, $path)
-    {
-
-        $user_agent = $this->_user_agent . ' ' . $this->_version;
-
-        @ini_set('allow_url_fopen', 1);
-        @ini_set('default_socket_timeout', $this->_socket_timeout);
-        @ini_set('user_agent', $user_agent);
-        if (
-            $this->_fetch_remote_type == 'file_get_contents'
-            ||
-            (
-                    $this->_fetch_remote_type == ''
-                    &&
-                    function_exists('file_get_contents')
-                    &&
-                    ini_get('allow_url_fopen') == 1
-            )
-        ) {
-            $this->_fetch_remote_type = 'file_get_contents';
-            if ($data = @file_get_contents('http://' . $host . $path)) {
-                return $data;
-            }
-
-        } elseif (
-            $this->_fetch_remote_type == 'curl'
-            ||
-            (
-                    $this->_fetch_remote_type == ''
-                    &&
-                    function_exists('curl_init')
-            )
-        ) {
-            $this->_fetch_remote_type = 'curl';
-            if ($ch = @curl_init()) {
-
-                @curl_setopt($ch, CURLOPT_URL, 'http://' . $host . $path);
-                @curl_setopt($ch, CURLOPT_HEADER, false);
-                @curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->_socket_timeout);
-                @curl_setopt($ch, CURLOPT_USERAGENT, $user_agent);
-
-                if ($data = @curl_exec($ch)) {
-                    return $data;
-                }
-
-                @curl_close($ch);
-            }
-
-        } else {
-            $this->_fetch_remote_type = 'socket';
-            $buff = '';
-            $fp = @fsockopen($host, 80, $errno, $errstr, $this->_socket_timeout);
-            if ($fp) {
-                @fputs($fp, "GET {$path} HTTP/1.0\r\nHost: {$host}\r\n");
-                @fputs($fp, "User-Agent: {$user_agent}\r\n\r\n");
-                while (!@feof($fp)) {
-                    $buff .= @fgets($fp, 128);
-                }
-                @fclose($fp);
-
-                $page = explode("\r\n\r\n", $buff);
-
-                return $page[1];
-            }
-
-        }
-
-        return $this->raise_error('Can\'t connect to server: ' . $host . $path . ', type: ' . $this->_fetch_remote_type);
-    }
-
-    /*
-     * Read from local file
-     */
-    function _read($filename)
-    {
-
-        $fp = @fopen($filename, 'rb');
-        @flock($fp, LOCK_SH);
-        if ($fp) {
-            clearstatcache();
-            $length = @filesize($filename);
-            $mqr = @get_magic_quotes_runtime();
-            @set_magic_quotes_runtime(0);
-            if ($length) {
-                $data = @fread($fp, $length);
-            } else {
-                $data = '';
-            }
-            @set_magic_quotes_runtime($mqr);
-            @flock($fp, LOCK_UN);
-            @fclose($fp);
-
-            return $data;
-        }
-
-        return $this->raise_error('Can\'t read file: ' . $filename);
-    }
-
-    /*
-     * Write to local file
-     */
-    function _write($filename, $data)
-    {
-
-        $fp = @fopen($filename, 'ab');
-        if ($fp) {
-            if (flock($fp, LOCK_EX | LOCK_NB)) {
-                ftruncate($fp, 0);
-                $mqr = @get_magic_quotes_runtime();
-                @set_magic_quotes_runtime(0);
-                @fwrite($fp, $data);
-                @set_magic_quotes_runtime($mqr);
-
-                @flock($fp, LOCK_UN);
-                @fclose($fp);
-
-                if (md5($this->_read($filename)) != md5($data)) {
-                    @unlink($filename);
-                    return $this->raise_error('Data integrity violation when writing to file: ' . $filename);
-                }
-            } else {
-                return false;
-            }
-
-            return true;
-        }
-
-        return $this->raise_error('Can\'t write to file: ' . $filename);
-    }
-
-    /*
-     * Error handler
-     */
-    function raise_error($e)
-    {
-
-        $this->_error = '<p style="color: red; font-weight: bold;">SerpZilla ERROR: ' . $e . '</p>';
-
-        if ($this->_verbose == true) {
-            print $this->_error;
-        }
-
-        return false;
-    }
-
-    function load_data()
-    {
-        $this->_db_file = $this->_get_db_file();
-
-        if (!is_file($this->_db_file)) {
-            // Try to create file
-            if (@touch($this->_db_file)) {
-                @chmod($this->_db_file, 0666); // Access mode
-            } else {
-                return $this->raise_error('File ' . $this->_db_file . ' doesn\'t exist and can\'t be created. Change directory mode to 0777.');
-            }
-        }
-
-        if (!is_writable($this->_db_file)) {
-            return $this->raise_error('Write access to the file ' . $this->_db_file . ' denied! Change directory mode to 0777.');
-        }
-
-        @clearstatcache();
-
-        $data = $this->_read($this->_db_file);
-        if (
-            !$this->_is_our_bot
-            &&
-            (
-                    filemtime($this->_db_file) < (time() - $this->_cache_lifetime)
-                    ||
-                    filesize($this->_db_file) == 0
-                    ||
-                    @unserialize($data) == false
-            )
-        ) {
-            // Dispenser request lock
-            @touch($this->_db_file, (time() - $this->_cache_lifetime + $this->_cache_reloadtime));
-
-            $path = $this->_get_dispenser_path();
-
-            foreach ($this->_server_list as $i => $server) {
-                if ($data = $this->fetch_remote_file($server, $path)) {
-                    if (substr($data, 0, 12) == 'FATAL ERROR:') {
-                        $this->raise_error($data);
-                    } else {
-                        // consistency check
-                        $hash = @unserialize($data);
-                        if ($hash != false) {
-                            // encoding cache
-                            $hash['client']['__last_update__'] = time();
-                            $hash['client']['__multi_site__'] = $this->_multi_site;
-                            $hash['client']['__fetch_remote_type__'] = $this->_fetch_remote_type;
-                            $hash['client']['__php_version__'] = phpversion();
-                            $hash['client']['__server_software__'] = $_SERVER['SERVER_SOFTWARE'];
-
-                            $data_new = @serialize($hash);
-                            if ($data_new) {
-                                $data = $data_new;
-                            }
-
-                            $this->_write($this->_db_file, $data);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Remove PHPSESSID
-        if (strlen(session_id())) {
-            $session = session_name() . '=' . session_id();
-            $this->_request_uri = str_replace(array('?' . $session . '&', '?' . $session, '&' . $session), array('?', '', ''), $this->_request_uri);
-        }
-
-        $this->set_data(@unserialize($data));
-    }
-}
-
-class ZILLA_client extends ZILLA_base
-{
-
-    var $_links = array();
-    var $_links_page = array();
-    var $_user_agent = 'SERPZILLA_Client PHP';
-
-    function ZILLA_client($options = null)
-    {
-        parent::ZILLA_base($options);
-        $this->load_data();
-    }
-
-    /*
-     * Link blocks can be split into several parts
-     */
-    function return_links($n = null, $offset = 0)
-    {
-
-        if (is_array($this->_links_page)) {
-
-            $total_page_links = count($this->_links_page);
-
-            if (!is_numeric($n) || $n > $total_page_links) {
-                $n = $total_page_links;
-            }
-
-            $links = array();
-
-            for ($i = 1; $i <= $n; $i++) {
-                if ($offset > 0 && $i <= $offset) {
-                    array_shift($this->_links_page);
-                } else {
-                    $links[] = array_shift($this->_links_page);
-                }
-            }
-
-            $html = join($this->_links_delimiter, $links);
-
-        } elseif (is_null($n)) {
-            $html = $this->_links_page;
-        } else {
-            $html = str_repeat($this->_links_page, $n);
-        }
-
-        if ($this->_debug) {
-            $html .= print_r($this, true);
-        }
-
-        return $html;
-    }
-
-    function _get_db_file()
-    {
-        if ($this->_multi_site) {
-            return dirname(__FILE__) . '/' . $this->_host . '.z.db';
-        } else {
-            return dirname(__FILE__) . '/z.db';
-        }
-    }
-
-    function _get_dispenser_path()
-    {
-        return '/code.php?user=' . _ZILLA_USER . '&host=' . $this->_host;
-    }
-
-    function set_data($data)
-    {
-        $this->_links = $data;
-        if (is_null($this->_links_delimiter) && isset($this->_links['info']['__zilla_delimiter__'])) {
-            $this->_links_delimiter = $this->_links['info']['__zilla_delimiter__'];
-        }
-
-        if (@array_key_exists($this->_request_uri, $this->_links['links']) && is_array($this->_links['links'][$this->_request_uri])) {
-            $this->_links_page = $this->_links['links'][$this->_request_uri];
-        } else {
-            if (isset($this->_links['info']['__zilla_new_url__']) && strlen($this->_links['info']['__zilla_new_url__'])) {
-                if ($this->_is_our_bot || $this->_force_show_code) {
-                    $this->_links_page = $this->_links['info']['__zilla_new_url__'];
-                }
-            }
-        }
-    }
-}
-
-?>itex_imoney_datafiles_delimiter_1
